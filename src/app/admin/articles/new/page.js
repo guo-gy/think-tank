@@ -123,80 +123,136 @@ export default function NewArticlePage() {
 
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">发布新文章</h1>
+    <div className="fixed inset-0 w-full min-h-screen bg-white flex flex-col" style={{paddingTop: '80px'}}>
+      <div className="flex-1 flex flex-row gap-8 w-full max-w-5xl mx-auto items-stretch px-2 pb-8">
+        {/* 左侧：文章配置卡片 */}
+        <div className="flex-1 bg-white rounded-3xl shadow-2xl border border-gray-100 p-10 flex flex-col">
+          <h1 className="text-2xl font-extrabold mb-8 text-indigo-700 text-center tracking-tight">文章配置</h1>
+          {error && <p className="bg-red-50 text-red-700 p-3 rounded-xl mb-4 border border-red-200">{error}</p>}
+          {success && <p className="bg-green-50 text-green-700 p-3 rounded-xl mb-4 border border-green-200">{success}</p>}
 
-      {error && <p className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</p>}
-      {success && <p className="bg-green-100 text-green-700 p-3 rounded mb-4">{success}</p>}
+          <form onSubmit={handleSubmit} className="space-y-7 flex-1 flex flex-col">
+            <div>
+              <label htmlFor="title" className="block text-base font-semibold text-gray-700 mb-1">标题</label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={handleTitleChange}
+                required
+                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-lg bg-gray-50 placeholder-gray-500"
+                placeholder="请输入文章标题"
+                style={{color: "#222"}}
+              />
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 shadow-xl rounded-lg">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">标题</label>
-          <input type="text" id="title" value={title} onChange={handleTitleChange} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+            <div>
+              <label htmlFor="slug" className="block text-base font-semibold text-gray-700 mb-1">Slug (URL)</label>
+              <input
+                type="text"
+                id="slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                required
+                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-lg bg-gray-50 placeholder-gray-500"
+                placeholder="如 my-new-article"
+                style={{color: "#222"}}
+              />
+              <p className="text-xs text-gray-400 mt-1">用于文章的URL，例如 <span className="font-mono">my-new-article</span></p>
+            </div>
+
+            <div>
+              <label htmlFor="excerpt" className="block text-base font-semibold text-gray-700 mb-1">摘要 (可选)</label>
+              <textarea
+                id="excerpt"
+                rows={3}
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-gray-50 placeholder-gray-500"
+                placeholder="一句话描述文章内容"
+                style={{color: "#222"}}
+              ></textarea>
+            </div>
+
+            <div>
+              <label htmlFor="category" className="block text-base font-semibold text-gray-700 mb-1">分类 (可选)</label>
+              <input
+                type="text"
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-gray-50 placeholder-gray-500"
+                placeholder="如 校园生活、技术分享"
+                style={{color: "#222"}}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="tags" className="block text-base font-semibold text-gray-700 mb-1">标签 (可选, 逗号分隔)</label>
+              <input
+                type="text"
+                id="tags"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-gray-50 placeholder-gray-500"
+                placeholder="如 AI, 校园, 经验"
+                style={{color: "#222"}}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="type" className="block text-base font-semibold text-gray-700 mb-1">类型</label>
+              <select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="mt-1 block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-gray-50"
+              >
+                <option value="NEWS">新闻</option>
+                <option value="NOTICE">通知</option>
+                <option value="DOWNLOAD">资料</option>
+                <option value="LECTURE">助学</option>
+              </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="isPublished"
+                name="isPublished"
+                type="checkbox"
+                checked={isPublished}
+                onChange={(e) => setIsPublished(e.target.checked)}
+                className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <label htmlFor="isPublished" className="ml-3 block text-base text-gray-700">立即发布</label>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 disabled:opacity-70 transition"
+              >
+                {loading ? '正在提交...' : '发布文章'}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div>
-          <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
-          <input type="text" id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-50" />
-          <p className="text-xs text-gray-500 mt-1">用于文章的URL，例如 &quot;my-new-article&quot;。</p>
-        </div>
-
-        <div>
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">内容</label>
-          {/* 这里未来会替换为富文本编辑器 */}
+        {/* 右侧：文章内容卡片 */}
+        <div className="flex-1 bg-white rounded-3xl shadow-2xl border border-gray-100 p-10 flex flex-col">
+          <h2 className="text-2xl font-bold mb-6 text-indigo-700 text-center">文章内容</h2>
           <textarea
             id="content"
-            rows={10}
+            rows={22}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="在此输入文章内容 (支持 Markdown 或 HTML，取决于后续处理)..."
+            className="flex-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-gray-50 placeholder-gray-500"
+            placeholder="在此输入文章内容 (支持 Markdown 或 HTML)..."
+            style={{color: "#222", minHeight: 320}}
           ></textarea>
-          {/* 
-          <RichTextEditor value={content} onChange={setContent} /> 
-          */}
         </div>
-
-        <div>
-          <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-1">摘要 (可选)</label>
-          <textarea id="excerpt" rows={3} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">类型</label>
-            <select id="type" value={type} onChange={(e) => setType(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-              <option value="NEWS">资讯 (NEWS)</option>
-              <option value="KNOWLEDGE">知识库 (KNOWLEDGE)</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">分类 (可选)</label>
-            <input type="text" id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">标签 (可选, 逗号分隔)</label>
-          <input type="text" id="tags" value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-        </div>
-
-        <div className="flex items-center">
-          <input id="isPublished" name="isPublished" type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
-          <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-900">立即发布</label>
-        </div>
-
-        <div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70"
-          >
-            {loading ? '正在提交...' : '发布文章'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }
