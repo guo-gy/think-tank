@@ -1,4 +1,4 @@
-# 智库官网 (Think Tank Hub) - [你的项目名称，如果不同]
+# 智库官网 (Think Tank Hub)
 
 这是一个使用 [Next.js](https://nextjs.org/) (JavaScript 版本) 构建的智库官网项目，旨在提供资讯发布、知识库管理、用户登录与评论等功能。项目采用前后端不分离的架构，后端 API 通过 Next.js API Routes 实现。
 
