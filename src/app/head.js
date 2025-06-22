@@ -14,6 +14,7 @@ export default function Head() {
       <meta property="og:site_name" content="山东大学软件学院智库" />
       <meta name="author" content="山东大学软件学院智库" />
       <link rel="canonical" href="https://www.sdu-softthink.cn/" />
+      <meta name="google-site-verification" content="J7ItXqkP2KyOnfxX-U7J3ML6krJv7voXorkdGQC0mAI" />
     </>
   );
 }
