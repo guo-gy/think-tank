@@ -27,6 +27,7 @@ export default function NewArticlePage() {
   // 多图片上传与封面选择
   const [imageFiles, setImageFiles] = useState([]); // 多图片
   const [coverIndex, setCoverIndex] = useState(0); // 封面索引，默认第一个
+  const [imageUrls, setImageUrls] = useState([]); // 新增：图片URL数组
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -105,6 +106,8 @@ export default function NewArticlePage() {
     } else {
       statusValue = "PRIVATE";
     }
+    // 提取图片id作为封面
+    const coverImageId = (imageUrls[coverIndex] || imageUrls[0] || '').replace(/^\/images\//, '');
     const articleData = {
       title,
       content,
@@ -113,7 +116,7 @@ export default function NewArticlePage() {
       category, // 分类
       status: statusValue, // 关键：传递 status 字段
       images: imageUrls,
-      cover: imageUrls[coverIndex] || imageUrls[0] || '',
+      coverImage: coverImageId,
       // 可根据后端需求添加附件字段
     };
 
@@ -158,20 +161,64 @@ export default function NewArticlePage() {
   const handleAttachmentChange = (e) => {
     setAttachmentFile(e.target.files[0] || null);
   };
-  // 处理多图片选择
-  const handleImagesChange = (e) => {
+  // 处理多图片选择，选择即上传
+  const handleImagesChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles(files);
-    setCoverIndex(0); // 默认第一个为封面
+    if (files.length === 0) return;
+    setLoading(true);
+    const formData = new FormData();
+    files.forEach(f => formData.append('images', f));
+    try {
+      const uploadRes = await fetch('/api/upload/images', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadResult = await uploadRes.json();
+      if (uploadRes.ok && Array.isArray(uploadResult.urls)) {
+        setImageFiles(prev => [...prev, ...files]);
+        setImageUrls(prev => [...prev, ...uploadResult.urls]);
+        setCoverIndex(0);
+      } else {
+        toast.error('图片上传失败');
+      }
+    } catch (err) {
+      toast.error('图片上传失败');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // 删除图片
+  const handleRemoveImage = async (idx) => {
+    const url = imageUrls[idx];
+    // 解析 /images/用户id/图片名
+    const match = url.match(/^\/images\/(.+?)\/(.+)$/);
+    if (match) {
+      const userId = match[1];
+      const filename = decodeURIComponent(match[2]);
+      try {
+        await fetch('/api/upload/images/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, filename })
+        });
+      } catch {}
+    }
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImageUrls(prev => prev.filter((_, i) => i !== idx));
+    if (coverIndex === idx) setCoverIndex(0);
+    else if (coverIndex > idx) setCoverIndex(c => c - 1);
+  };
+
   // 处理封面变化
   const handleCoverChange = (idx) => {
     setCoverIndex(idx);
   };
 
   // 在内容区插入图片markdown引用
-  const insertImageMarkdown = (file) => {
-    const md = `![](${file.name})`;
+  const insertImageMarkdown = (file, url) => {
+    // url 为 /images/用户id/图片名
+    const md = `![](${url})`;
     // 在光标处插入
     const textarea = document.getElementById('content');
     if (textarea) {
@@ -406,7 +453,7 @@ export default function NewArticlePage() {
                       {imageFiles.map((file, idx) => (
                         <div key={idx} className={`relative flex flex-col items-center border-2 rounded-xl p-2 transition cursor-pointer group ${coverIndex===idx ? 'border-indigo-500 bg-indigo-50/80 shadow-lg scale-105' : 'border-gray-200 bg-white/80 hover:scale-105 hover:shadow-md'}`}
                           style={{width:100, boxShadow:coverIndex===idx?'0 0 0 3px #6366f1aa':''}}
-                          onClick={()=>insertImageMarkdown(file)}>
+                          onClick={()=>insertImageMarkdown(file, imageUrls[idx] || '')}>
                           <div className="relative w-16 h-16 mb-1">
                             <img
                               src={URL.createObjectURL(file)}
@@ -414,6 +461,10 @@ export default function NewArticlePage() {
                               className="w-16 h-16 object-cover rounded border shadow group-hover:scale-110 group-hover:shadow-lg transition-all duration-200"
                               style={{boxShadow:coverIndex===idx?'0 0 0 2px #6366f1':''}}
                             />
+                            <button type="button" title="删除图片" onClick={e => { e.stopPropagation(); handleRemoveImage(idx); }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-600 z-20 text-xs font-bold">
+                              ×
+                            </button>
                           </div>
                           <span className="text-xs truncate max-w-[80px] text-gray-700 mb-1" title={file.name}>{file.name}</span>
                           <label className="flex items-center gap-1 cursor-pointer select-none mt-1" onClick={e=>e.stopPropagation()}>

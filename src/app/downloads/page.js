@@ -124,7 +124,7 @@ export default function DownloadsPage() {
                     {item.cover && (
                       <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                         <img
-                          src={item.cover}
+                          src={`/images/${item.cover}`}
                           alt="资料配图"
                           className="object-cover w-full h-full object-center"
                         />

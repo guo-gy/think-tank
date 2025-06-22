@@ -151,7 +151,7 @@ export default function NoticesPage() {
                     {item.cover && (
                       <div className="relative w-2/3 h-full min-w-[6rem] z-0">
                         <img
-                          src={item.cover}
+                          src={`/images/${item.cover}`}
                           alt="通知配图"
                           className="object-cover w-full h-full object-center"
                         />

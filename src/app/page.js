@@ -35,16 +35,16 @@ export default function HomePage() {
   useEffect(() => {
     fetch('/api/articles?partition=NEWS&status=PUBLIC')
       .then(res => res.json())
-      .then(data => setNewsList((data.data || []).slice(0, 5)));
+      .then((data) => setNewsList((data.data || []).slice(0, 5)));
     fetch('/api/articles?partition=DOWNLOAD&status=PUBLIC')
       .then(res => res.json())
-      .then(data => setDownloadList((data.data || []).slice(0, 5)));
+      .then((data) => setDownloadList((data.data || []).slice(0, 5)));
     fetch('/api/articles?partition=LECTURE&status=PUBLIC')
       .then(res => res.json())
-      .then(data => setLectureList((data.data || []).slice(0, 5)));
+      .then((data) => setLectureList((data.data || []).slice(0, 5)));
     fetch('/api/articles?partition=NOTICE&status=PUBLIC')
       .then(res => res.json())
-      .then(data => setNoticeList((data.data || []).slice(0, 5)));
+      .then((data) => setNoticeList((data.data || []).slice(0, 5)));
   }, []);
 
   const scrollRef = useRef(null);
@@ -202,7 +202,7 @@ export default function HomePage() {
                     <SwiperSlide key={item._id || idx}>
                       <div className="relative w-full h-full" style={{ minHeight: 200 }}>
                         <Image
-                          src={item.cover || '/images/1.jpg'}
+                          src={item.cover ? `/images/${item.cover}` : '/images/1.jpg'}
                           alt={`轮播图${idx + 1}`}
                           fill
                           className="object-cover w-full h-full rounded-3xl shadow-lg"
@@ -257,7 +257,7 @@ export default function HomePage() {
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.cover}
+                        src={`/images/${item.cover}`}
                         alt="公告配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -319,7 +319,7 @@ export default function HomePage() {
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.cover}
+                        src={`/images/${item.cover}`}
                         alt="资料配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -380,7 +380,7 @@ export default function HomePage() {
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.cover}
+                        src={`/images/${item.cover}`}
                         alt="讲义配图"
                         fill
                         className="object-cover w-full h-full object-center"

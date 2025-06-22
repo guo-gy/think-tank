@@ -21,8 +21,8 @@ const ArticleSchema = new mongoose.Schema({
         trim: true,
     },
     coverImage: {
-        data: Buffer, // 封面图二进制
-        mimeType: { type: String, enum: ['image/jpeg', 'image/png'], default: 'image/png' },
+        type: String,
+        trim: true, // 保存图片id字符串
     },
     attachments: [
         {
