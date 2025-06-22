@@ -1,7 +1,7 @@
 // src/app/admin/articles/write/page.js
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -22,21 +22,17 @@ export default function NewArticlePage() {
   const [imageUrls, setImageUrls] = useState([]); // 新增：图片URL数组
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
   // 左右卡片收起状态
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(true);
 
-  const handleToggleLeft = () => setShowLeft(!showLeft);
-  const handleToggleRight = () => setShowRight(!showRight);
+  // 文件上传相关 state
+  const [fileList, setFileList] = useState([]); // {name, url, size}
+  const [fileUploading, setFileUploading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
 
     if (!title || !content) {
       toast.error('标题和内容不能为空。');
@@ -44,32 +40,8 @@ export default function NewArticlePage() {
       return;
     }
 
-    // 1. 上传所有图片，获取图片URL数组
-    let imageUrls = [];
-    if (imageFiles.length > 0) {
-      const formData = new FormData();
-      imageFiles.forEach(f => formData.append('images', f));
-      try {
-        const uploadRes = await fetch('/images', {
-          method: 'POST',
-          body: formData,
-        });
-        const uploadResult = await uploadRes.json();
-        if (uploadRes.ok && Array.isArray(uploadResult.urls)) {
-          imageUrls = uploadResult.urls;
-        } else {
-          toast.error('图片上传失败');
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        toast.error('图片上传失败');
-        setLoading(false);
-        return;
-      }
-    }
-
-    // 2. 组装文章数据
+    // 直接用 imageUrls 和 coverIndex 取封面id
+    const coverImageId = (imageUrls[coverIndex] || imageUrls[0] || '').replace(/^\/api\/images\//, '');
     let statusValue = "PRIVATE";
     if (isPublished) {
       if (session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN") {
@@ -80,45 +52,34 @@ export default function NewArticlePage() {
     } else {
       statusValue = "PRIVATE";
     }
-    // 提取图片id作为封面
-    const coverImageId = (imageUrls[coverIndex] || imageUrls[0] || '').replace(/^\/images\//, '');
     const articleData = {
       title,
       content,
-      description, // 用 description 字段
-      partition, // 分区
+      description,
+      partition, 
+      attachments: fileList.map(f => f.id), // 只存一维id数组
       category, // 分类
-      status: statusValue, // 关键：传递 status 字段
-      images: imageUrls,
-      coverImage: coverImageId, // 新增：封面字段
-      // 可根据后端需求添加附件字段
+      status: statusValue,
+      coverImage: coverImageId,
     };
 
     try {
-      const res = await fetch('/api/articles', { // 我们需要创建这个 API 端点
+      const res = await fetch('/api/articles', {
         method: 'POST',
-        headers:
-         {
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(articleData),
       });
-
       const result = await res.json();
-
       if (!res.ok) {
         toast.error(result.message || `创建文章失败 (Status: ${res.status})`);
       } else {
         toast.success(`文章 "${result.data.title}" 创建成功！`);
-        // 清空表单或跳转到文章列表/详情页
         setTitle('');
         setContent('');
         setDescription('');
-        // setType('NEWS');
-        // setCategory('');
-        // setIsPublished(false);
-        // router.push(`/admin/articles`); // 例如跳转到管理列表
-        router.push(`/${result.data._id}`); // 跳转到新发布的文章详情页，使用id
+        router.push(`/${result.data._id}`);
       }
     } catch (err) {
       console.error("Error creating article:", err);
@@ -136,7 +97,7 @@ export default function NewArticlePage() {
     const formData = new FormData();
     files.forEach(f => formData.append('images', f));
     try {
-      const uploadRes = await fetch('/images', {
+      const uploadRes = await fetch('/api/images', {
         method: 'POST',
         body: formData,
       });
@@ -144,7 +105,8 @@ export default function NewArticlePage() {
       if (uploadRes.ok && Array.isArray(uploadResult.urls)) {
         setImageFiles(prev => [...prev, ...files]);
         setImageUrls(prev => [...prev, ...uploadResult.urls]);
-        setCoverIndex(0);
+        // 只有首次添加图片时才自动设封面为 0
+        setCoverIndex(prev => (prev === 0 && prev.length === 0 ? 0 : prev));
       } else {
         toast.error('图片上传失败');
       }
@@ -158,12 +120,12 @@ export default function NewArticlePage() {
   // 删除图片
   const handleRemoveImage = async (idx) => {
     const url = imageUrls[idx];
-    // 解析 /images/图片id
-    const match = url.match(/^\/images\/(.+)$/);
+    // 解析 /api/images/图片id
+    const match = url.match(/^\/api\/images\/(.+)$/);
     if (match) {
       const deleteId = match[1];
       try {
-        await fetch(`/images/${deleteId}`, {
+        await fetch(`/api/images/${deleteId}`, {
           method: 'DELETE',
         });
       } catch {}
@@ -174,14 +136,9 @@ export default function NewArticlePage() {
     else if (coverIndex > idx) setCoverIndex(c => c - 1);
   };
 
-  // 处理封面变化
-  const handleCoverChange = (idx) => {
-    setCoverIndex(idx);
-  };
-
   // 在内容区插入图片markdown引用
   const insertImageMarkdown = (file, url) => {
-    // url 为 /images/图片id
+    // url 为 /api/images/图片id
     const md = `![](${url})`;
     // 在光标处插入
     const textarea = document.getElementById('content');
@@ -198,8 +155,50 @@ export default function NewArticlePage() {
     }
   };
 
-  // 判断是否为管理员
-  const isAdmin = session?.user?.role === 'ADMIN';
+  // 文件上传处理
+  const handleFilesChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setFileUploading(true);
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    try {
+      const uploadRes = await fetch('/api/files', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadResult = await uploadRes.json();
+      if (uploadRes.ok && Array.isArray(uploadResult.urls) && Array.isArray(uploadResult.ids)) {
+        // 组装文件信息，自动带上id
+        const newFiles = files.map((f, i) => ({
+          name: f.name,
+          size: f.size,
+          url: uploadResult.urls[i],
+          id: uploadResult.ids[i],
+        }));
+        setFileList(prev => [...prev, ...newFiles]);
+        toast.success('文件上传成功');
+      } else {
+        toast.error('文件上传失败');
+      }
+    } catch (err) {
+      toast.error('文件上传失败');
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  // 文件删除
+  const handleRemoveFile = async (idx) => {
+    const file = fileList[idx];
+    // 前端移除 + 后端删除
+    if (file.id) {
+      try {
+        await fetch(`/api/files/${file.id}`, { method: 'DELETE' });
+      } catch {}
+    }
+    setFileList(prev => prev.filter((_, i) => i !== idx));
+  };
 
   return (
     <div className="fixed inset-0 w-full min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex flex-col" style={{paddingTop: '80px'}}>
@@ -313,19 +312,19 @@ export default function NewArticlePage() {
         {/* 中间：内容编辑区自适应宽度 */}
         <div className="flex-1 bg-white/90 rounded-3xl shadow-2xl border border-gray-100 p-10 flex flex-col min-h-0 overflow-y-auto backdrop-blur-xl" style={{maxHeight:'calc(100vh - 120px)', color:'#222', minWidth:0, transition:'all 0.4s cubic-bezier(.4,2,.6,1)'}}>
           <h2 className="text-2xl font-bold mb-6 text-indigo-700 text-center drop-shadow">文章内容</h2>
-          {/* {isMainAttachment && mainAttachmentFile ? (
+          {/* {isMainattachments && mainattachmentsFile ? (
             <div className="flex-1 min-h-0 w-full h-full bg-white/80 rounded-xl border border-gray-100 p-6 overflow-auto text-gray-700 text-base flex flex-col" style={{minHeight:0, height:'100%', maxHeight:'100%'}}>
               {/!* 附件预览 *!/}
               {(() => {
-                const name = mainAttachmentFile.name.toLowerCase();
+                const name = mainattachmentsFile.name.toLowerCase();
                 if (name.endsWith('.md')) {
                   return (
-                    <pre className="whitespace-pre-wrap break-words text-sm flex-1 w-full h-full overflow-auto" style={{fontFamily:'inherit', minHeight:0, height:'100%', maxHeight:'100%'}}>{mainAttachmentFile._previewContent || '正在加载...'}</pre>
+                    <pre className="whitespace-pre-wrap break-words text-sm flex-1 w-full h-full overflow-auto" style={{fontFamily:'inherit', minHeight:0, height:'100%', maxHeight:'100%'}}>{mainattachmentsFile._previewContent || '正在加载...'}</pre>
                   );
                 } else if (name.match(/\.(pdf)$/)) {
-                  return mainAttachmentPreviewUrl ? (
-                    <object data={mainAttachmentPreviewUrl} type="application/pdf" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}>
-                      <iframe src={mainAttachmentPreviewUrl} title="pdf预览" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}></iframe>
+                  return mainattachmentsPreviewUrl ? (
+                    <object data={mainattachmentsPreviewUrl} type="application/pdf" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}>
+                      <iframe src={mainattachmentsPreviewUrl} title="pdf预览" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}></iframe>
                       <div className="text-gray-400 text-center">PDF 预览不可用，请下载后本地查看。</div>
                     </object>
                   ) : (
@@ -334,7 +333,7 @@ export default function NewArticlePage() {
                 } else if (name.match(/\.(jpe?g|png|gif|webp|svg)$/)) {
                   // 图片预览
                   return (
-                    <img src={URL.createObjectURL(mainAttachmentFile)} alt={mainAttachmentFile.name} style={{width:'100%', height:'100%', objectFit:'contain', borderRadius:'1rem', background:'#f8fafc'}} />
+                    <img src={URL.createObjectURL(mainattachmentsFile)} alt={mainattachmentsFile.name} style={{width:'100%', height:'100%', objectFit:'contain', borderRadius:'1rem', background:'#f8fafc'}} />
                   );
                 } else if (name.endsWith('.zip')) {
                   return (
@@ -374,14 +373,10 @@ export default function NewArticlePage() {
             </svg>
           </button>
           {showRight && (
-            <div className="flex flex-col bg-white/90 rounded-3xl shadow-2xl border border-gray-100 p-10 h-fit min-h-[420px] min-w-[260px] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_8px_32px_#6366f122]" style={{color:'#222', boxShadow:'0 8px 32px #6366f122'}}>
+            <div className="flex flex-col bg-white/90 rounded-3xl shadow-2xl border border-gray-100 p-10 h-[700px] min-h-[600px] min-w-[260px] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_8px_32px_#6366f122]" style={{color:'#222', boxShadow:'0 8px 32px #6366f122'}}>
               <h2 className="text-xl font-bold mb-6 text-indigo-700 text-center drop-shadow">图片</h2>
-              {/* 渐变横线 */}
-              <div className="w-full flex items-center mb-6">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-100 to-transparent" style={{opacity:0.7}}></div>
-              </div>
               {/* 图片区 */}
-              <div className="flex flex-col gap-2 mb-6 w-full relative">
+              <div className="flex flex-col gap-2 mb-6 w-full relative flex-1">
                 {/* 添加图片加号按钮 */}
                 {imageFiles.length > 0 && (
                   <button type="button" title="添加图片" onClick={()=>document.getElementById('image-upload-input')?.click()} className="absolute top-0 right-0 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 rounded-full p-2 shadow hover:scale-110 hover:bg-indigo-200 transition-all z-10 flex items-center justify-center" style={{width:32, height:32}}>
@@ -396,10 +391,7 @@ export default function NewArticlePage() {
                   </div>
                 ) : (
                   <>
-                  <input id="image-upload-input" type="file" accept="image/*" multiple style={{display:'none'}} onChange={e => {
-                    const files = Array.from(e.target.files || []);
-                    setImageFiles(prev => prev.concat(files));
-                  }} />
+                  <input id="image-upload-input" type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleImagesChange} />
                   <div className="flex flex-col gap-2 mt-2 w-full">
                     <div className="text-sm text-gray-700 mb-1">图片列表</div>
                     <div className="text-xs text-gray-400 mb-1 leading-tight">点击图片插入Markdown/设为封面</div>
@@ -430,6 +422,35 @@ export default function NewArticlePage() {
                     </div>
                   </div>
                   </>
+                )}
+              </div>
+              {/* 渐变横线分隔 */}
+              <div className="w-full h-px my-4 bg-gradient-to-r from-transparent via-indigo-200 to-transparent" style={{opacity:0.8}}></div>
+              {/* 文件区 */}
+              <div className="flex flex-col gap-2 w-full flex-1 overflow-auto">
+                <h2 className="text-xl font-bold mb-4 text-indigo-700 text-center drop-shadow">文件</h2>
+                <div className="flex flex-row items-center gap-2 mb-2">
+                  <input id="file-upload-input" type="file" multiple onChange={handleFilesChange} style={{display:'none'}} />
+                  <button type="button" onClick={()=>document.getElementById('file-upload-input')?.click()} className="px-3 py-1 rounded bg-indigo-100 text-indigo-700 font-semibold hover:bg-indigo-200 transition disabled:opacity-60" disabled={fileUploading}>
+                    {fileUploading ? '正在上传...' : '上传文件'}
+                  </button>
+                  <span className="text-xs text-gray-400">支持pdf/zip/doc/excel等</span>
+                </div>
+                {fileList.length === 0 ? (
+                  <div className="text-gray-400 text-center">还未上传文件</div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {fileList.map((file, idx) => (
+                      <li key={idx} className="flex items-center justify-between py-2 px-1 group">
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="truncate text-sm text-gray-800" title={file.name}>{file.name}</span>
+                          <span className="text-xs text-gray-400">{(file.size/1024).toFixed(1)} KB</span>
+                        </div>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline text-xs px-2">下载</a>
+                        <button type="button" onClick={()=>handleRemoveFile(idx)} className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold">删除</button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>

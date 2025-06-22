@@ -7,7 +7,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // 点赞/取消点赞
 export async function POST(req, { params }) {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ message: '请先登录' }, { status: 401 });
   const article = await Article.findById(id);

@@ -123,10 +123,10 @@ export default function NewsPage() {
                       <span className="text-sm text-gray-500 mt-1">{item.description || ''}</span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                    {item.cover && (
+                    {item.coverImage && (
                       <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                         <img
-                          src={`/images/${item.cover}`}
+                          src={`/api/images/${item.coverImage}`}
                           alt="新闻配图"
                           className="object-cover w-full h-full object-center"
                         />

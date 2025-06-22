@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 import dbConnect from '@/lib/dbConnect';
 import Article from '@/models/Article';
-import User from '@/models/User';
 
 // POST /api/articles - 创建新文章
 export async function POST(request) {
@@ -30,15 +29,13 @@ export async function POST(request) {
     const {
       title,
       content,
-      contentType = 'markdown',
       description,
-      coverImage, // { data, mimeType } base64 或 Buffer，前端需配合
-      attachments = [], // [{ fileName, fileType, size, fileData, mimeType, url }]
+      coverImage,
+      attachments = [], 
       status = 'PRIVATE',
       partition, // 分区，四个固定
       category, // 分类，自定义
       subCategory,
-      tags = [],
     } = body;
 
     // 基本校验
@@ -48,44 +45,21 @@ export async function POST(request) {
     if (!['NEWS', 'NOTICE', 'DOWNLOAD', 'LECTURE'].includes(partition)) {
       return NextResponse.json({ message: '分区不合法' }, { status: 400 });
     }
-    if (!['markdown', 'mainAttachment'].includes(contentType)) {
-      return NextResponse.json({ message: '内容类型不合法' }, { status: 400 });
-    }
     if (!['PRIVATE', 'PENDING', 'PUBLIC'].includes(status)) {
       return NextResponse.json({ message: '文章状态不合法' }, { status: 400 });
     }
 
-    // 组装 coverImage
-    let coverImageObj = undefined;
-    if (coverImage && coverImage.data && coverImage.mimeType) {
-      coverImageObj = {
-        data: Buffer.from(coverImage.data, coverImage.data instanceof Buffer ? undefined : 'base64'),
-        mimeType: coverImage.mimeType,
-      };
-    }
-    // 组装附件
-    const attachmentsArr = (attachments || []).map(f => ({
-      fileName: f.fileName,
-      fileType: f.fileType,
-      size: f.size,
-      fileData: f.fileData ? Buffer.from(f.fileData, f.fileData instanceof Buffer ? undefined : 'base64') : undefined,
-      mimeType: f.mimeType,
-      url: f.url,
-    }));
-
     const newArticle = new Article({
       title,
       content,
-      contentType,
       description,
-      coverImage: coverImageObj,
-      attachments: attachmentsArr,
+      coverImage,
+      attachments,
       status,
       author: session.user.id,
       partition,
       category,
       subCategory,
-      tags,
     });
 
     const savedArticle = await newArticle.save();
@@ -125,6 +99,7 @@ export async function GET(request) {
     const articles = await Article.find(filter)
       .sort({ createdAt: -1 })
       .populate('author', 'username');
+    // 调试输出每篇文章的 attachments 字段
     return NextResponse.json({ success: true, data: articles }, { status: 200 });
   } catch (error) {
     console.error('Error fetching articles:', error);

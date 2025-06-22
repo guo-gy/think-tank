@@ -59,7 +59,7 @@ export default function LoginPage() {
       {/* 左侧图片 6/10 */}
       <div className="hidden md:block md:w-3/5 w-0 h-full relative">
         <img
-          src="/images/3.jpg"
+          src="/api/images/3.jpg"
           alt="登录配图"
           className="object-left object-cover w-full h-full"
         />

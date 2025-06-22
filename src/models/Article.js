@@ -11,11 +11,6 @@ const ArticleSchema = new mongoose.Schema({
         type: String, // markdown 或 html
         required: [true, 'Please provide content.'],
     },
-    contentType: {
-        type: String,
-        enum: ['markdown', 'mainAttachment'],
-        default: 'markdown',
-    },
     description: {
         type: String,
         trim: true,
@@ -25,21 +20,10 @@ const ArticleSchema = new mongoose.Schema({
         trim: true, // 保存图片id字符串
     },
     attachments: [
-        {
-            fileName: { type: String, required: true },
-            fileType: {
-                type: String,
-                enum: [
-                  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'zip',
-                  'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'
-                ],
-                required: true,
-            },
-            size: { type: Number }, // 字节数
-            fileData: { type: Buffer, required: true }, // 文件二进制内容
-            mimeType: { type: String, required: true }, // 文件 MIME 类型
-            url: { type: String, trim: true }, // 可选，兼容外链
-        }
+        [{
+            type: String, // 附件的 URL 或 ID
+            trim: true,
+        }]
     ],
     status: {
         type: String,

@@ -4,17 +4,17 @@ import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-async function getImageModel() {
+async function getFileModel() {
   await dbConnect();
-  const ImageSchema = new mongoose.Schema({
+  const FileSchema = new mongoose.Schema({
     filename: String,
-    mimetype: String,
+    contentType: String,
     size: Number,
-    buffer: Buffer,
+    data: Buffer,
     createdAt: { type: Date, default: Date.now },
     uploader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  }, { collection: 'images' });
-  return mongoose.models.Image || mongoose.model('Image', ImageSchema);
+  }, { collection: 'files' });
+  return mongoose.models.File || mongoose.model('File', FileSchema);
 }
 
 export const runtime = 'nodejs';
@@ -28,11 +28,11 @@ export async function DELETE(req) {
   if (!userId || !filename) {
     return NextResponse.json({ message: '参数缺失' }, { status: 400 });
   }
-  const Image = await getImageModel();
-  const result = await Image.deleteOne({ uploader: userId, filename });
+  const File = await getFileModel();
+  const result = await File.deleteOne({ uploader: userId, filename });
   if (result.deletedCount === 1) {
     return NextResponse.json({ success: true });
   } else {
-    return NextResponse.json({ success: false, message: '未找到图片' }, { status: 404 });
+    return NextResponse.json({ success: false, message: '未找到文件' }, { status: 404 });
   }
 }

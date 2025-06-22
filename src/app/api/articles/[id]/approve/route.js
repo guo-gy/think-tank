@@ -7,7 +7,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // 审核通过
 export async function POST(req, { params }) {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
     return NextResponse.json({ message: '无权限' }, { status: 403 });
@@ -25,7 +25,7 @@ export async function POST(req, { params }) {
 // 审核拒绝
 export async function DELETE(req, { params }) {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
     return NextResponse.json({ message: '无权限' }, { status: 403 });

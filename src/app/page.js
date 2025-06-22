@@ -152,7 +152,7 @@ export default function HomePage() {
                     <SwiperSlide key={item._id || idx}>
                       <div className="relative w-full h-full" style={{ minHeight: 200 }}>
                         <Image
-                          src={item.cover ? `/images/${item.cover}` : '/images/1.jpg'}
+                          src={item.coverImage ? `/api/images/${item.coverImage}` : '/api/images/1.jpg'}
                           alt={`轮播图${idx + 1}`}
                           fill
                           className="object-cover w-full h-full rounded-3xl shadow-lg"
@@ -204,10 +204,10 @@ export default function HomePage() {
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
                     <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
-                  {item.cover && (
+                  {item.coverImage && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={`/images/${item.cover}`}
+                        src={`/api/images/${item.coverImage}`}
                         alt="公告配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -266,10 +266,10 @@ export default function HomePage() {
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
                     <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
-                  {item.cover && (
+                  {item.coverImage && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={`/images/${item.cover}`}
+                        src={`/api/images/${item.coverImage}`}
                         alt="资料配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -327,10 +327,10 @@ export default function HomePage() {
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
                     <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
-                  {item.cover && (
+                  {item.coverImage && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={`/images/${item.cover}`}
+                        src={`/api/images/${item.coverImage}`}
                         alt="讲义配图"
                         fill
                         className="object-cover w-full h-full object-center"

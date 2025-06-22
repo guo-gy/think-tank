@@ -43,6 +43,7 @@ export default function ArticleDetail({ articleId }) {
                 }
                 setLikeCount(Array.isArray(art?.likes) ? art.likes.length : 0);
                 setLiked(Array.isArray(art?.likes) && session?.user ? art.likes.includes(session.user.id) : false);
+                console.log('[ArticleDetail] 文章数据:', art);
             })
             .catch((err) => {
                 setError('文章加载失败：' + err.message);
@@ -57,9 +58,35 @@ export default function ArticleDetail({ articleId }) {
         setCommentLoading(true);
         fetch(`/api/articles/${articleId}/comments`)
             .then(res => res.json())
-            .then(data => setComments(data.comments || []))
+            .then(data => {
+                setComments(data.comments || []);
+                console.log('[ArticleDetail] 评论数据:', data.comments || []);
+            })
             .catch(() => setComments([]))
             .finally(() => setCommentLoading(false));
+    }, [articleId]);
+
+    // 附件id数据
+    const [attachmentsIds, setAttachmentsIds] = useState([]);
+
+    // 获取附件id列表
+    useEffect(() => {
+        if (!articleId) return;
+        fetch(`/api/articles/${articleId}/attachments`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data.attachments)) {
+                    setAttachmentsIds(data.attachments);
+                    console.log('[ArticleDetail] 附件id:', data.attachments);
+                } else {
+                    setAttachmentsIds([]);
+                    console.log('[ArticleDetail] 附件id(空):', []);
+                }
+            })
+            .catch(() => {
+                setAttachmentsIds([]);
+                console.log('[ArticleDetail] 附件id(异常):', []);
+            });
     }, [articleId]);
 
     const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -164,17 +191,6 @@ export default function ArticleDetail({ articleId }) {
     if (error) return <div className="py-20 text-center text-red-500">{error}</div>;
     if (!article) return <div className="py-20 text-center text-gray-400">未找到文章</div>;
 
-    // 图片轮播数据
-    let images = [];
-    if (Array.isArray(article.images) && article.images.length > 0) {
-        images = article.images;
-    } else if (article.cover) {
-        images = [article.cover];
-    }
-
-    // 附件数据
-    const attachments = Array.isArray(article.attachments) ? article.attachments.filter(f => f.url) : [];
-
     return (
         <div className="fixed inset-0 w-screen h-screen box-border flex flex-row gap-8 bg-gradient-to-br from-indigo-50 to-white p-8 pt-24">
             {/* 主内容区 7/10 */}
@@ -209,44 +225,7 @@ export default function ArticleDetail({ articleId }) {
                     <span>作者：{article.author?.username || '未知'}</span>
                     <span>发布时间：{article.createdAt ? new Date(article.createdAt).toLocaleString() : ''}</span>
                 </div>
-                {/* 图片轮播 */}
-                {images.length > 0 && (
-                    <div className="w-full max-w-2xl mb-8 flex flex-col items-center">
-                        <div className="relative w-full h-80 flex items-center justify-center bg-gray-50 rounded-2xl shadow overflow-hidden">
-                            <img src={images[imgIndex]} alt={`图片${imgIndex + 1}`} className="object-contain w-full h-full" />
-                            {images.length > 1 && (
-                                <>
-                                    <button onClick={() => setImgIndex(i => i === 0 ? images.length - 1 : i - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-indigo-100 rounded-full p-2 shadow border border-gray-200 z-10">
-                                        <svg width="24" height="24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" /></svg>
-                                    </button>
-                                    <button onClick={() => setImgIndex(i => (i + 1) % images.length)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-indigo-100 rounded-full p-2 shadow border border-gray-200 z-10">
-                                        <svg width="24" height="24" fill="none"><path d="M9 6l6 6-6 6" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" /></svg>
-                                    </button>
-                                </>
-                            )}
-                            {images.length > 1 && (
-                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                                    {images.map((img, idx) => (
-                                        <span key={idx} className={`w-2.5 h-2.5 rounded-full ${imgIndex === idx ? 'bg-indigo-500' : 'bg-gray-300'} block`} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
                 <article className="markdown-body w-full max-w-3xl text-lg leading-relaxed bg-white/0" style={{ minHeight: 320 }} dangerouslySetInnerHTML={{ __html: html }} />
-                {/* 附件区 */}
-                {attachments.length > 0 && (
-                    <div className="w-full max-w-3xl mt-12 flex flex-col gap-3 items-start">
-                        <div className="text-base font-semibold text-indigo-700 mb-2">附件下载：</div>
-                        {attachments.map((f, idx) => (
-                            <a key={idx} href={f.url} download={f.fileName || `附件${idx + 1}`} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 shadow-sm font-medium transition-all" target="_blank" rel="noopener noreferrer">
-                                <svg width="18" height="18" fill="none"><path d="M9 3v9m0 0l-3-3m3 3l3-3M4 15h10" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" /></svg>
-                                {f.fileName || f.url}
-                            </a>
-                        ))}
-                    </div>
-                )}
             </div>
             {/* 评论区 3/10 */}
             <div className="flex-[3] min-w-[320px] max-w-sm flex flex-col gap-6 h-full">
@@ -281,8 +260,8 @@ export default function ArticleDetail({ articleId }) {
                     >
                         <div className="flex items-center gap-3">
                             {/* 爱心图标用 viewBox 0 0 24 24，宽高20，竖直居中，彻底避免裁切 */}
-                            <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'24px',height:'24px',lineHeight:'0'}}>
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? '#f43f5e' : 'none'} stroke="#f43f5e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:'block'}}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', lineHeight: '0' }}>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? '#f43f5e' : 'none'} stroke="#f43f5e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                                 <path d="M12 21C12 21 4 13.36 4 8.5C4 5.42 6.42 3 9.5 3C11.24 3 12.91 3.81 14 5.08C15.09 3.81 16.76 3 18.5 3C21.58 3 24 5.42 24 8.5C24 13.36 16 21 16 21H12Z" />
                               </svg>
                             </span>
@@ -329,6 +308,53 @@ export default function ArticleDetail({ articleId }) {
                         )}
                     </div>
                 </div>
+                {/* 附件下载卡片 */}
+                {attachmentsIds.length > 0 && (
+                    <div className="w-full rounded-3xl shadow-xl border border-indigo-100 p-8 flex flex-col items-stretch bg-white/90" style={{marginTop: 0}}>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1em', marginBottom: 12, color: '#6366f1', letterSpacing: 1, textAlign: 'center' }}>📎 附件下载</h3>
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '16px',
+                            justifyContent: 'center',
+                        }}>
+                            {attachmentsIds.map((id, idx) => (
+                                <a
+                                    key={id}
+                                    href={`/api/files/${id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        background: '#fff',
+                                        borderRadius: '1rem',
+                                        padding: '10px 18px',
+                                        boxShadow: '0 1px 4px 0 rgba(99,102,241,0.07)',
+                                        border: '1px solid #e0e7ff',
+                                        color: '#6366f1',
+                                        fontWeight: 500,
+                                        fontSize: '1em',
+                                        textDecoration: 'none',
+                                        transition: 'all 0.18s',
+                                        minWidth: 110,
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#f0f4ff'}
+                                    onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                >
+                                    <svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 4}}>
+                                        <path d="M12 5v8.59a2 2 0 0 1-4 0V5" />
+                                        <rect x="8" y="15" width="8" height="4" rx="2" />
+                                    </svg>
+                                    <span style={{whiteSpace: 'nowrap'}}>附件{idx + 1}</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

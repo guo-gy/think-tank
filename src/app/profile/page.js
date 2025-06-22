@@ -19,7 +19,7 @@ export default function ProfilePage() {
     setLoading(true);
     setError("");
     // 获取自己写的文章（所有状态）
-    fetch(`/api/articles?author=${session.user._id}`)
+    fetch(`/api/articles?author=${session.user.id}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text());
         return res.json();
@@ -93,10 +93,10 @@ export default function ProfilePage() {
                         {article.description && <span className="text-sm text-gray-500 mt-1">{article.description}</span>}
                       </div>
                       {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                      {article.cover && (
+                      {article.coverImage && (
                         <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                           <img
-                            src={`/images/${article.cover}`}
+                            src={`/api/images/${article.coverImage}`}
                             alt="文章配图"
                             className="object-cover w-full h-full object-center"
                           />
@@ -130,10 +130,10 @@ export default function ProfilePage() {
                         {article.description && <span className="text-sm text-gray-500 mt-1">{article.description}</span>}
                       </div>
                       {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                      {article.cover && (
+                      {article.coverImage && (
                         <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                           <img
-                            src={`/images/${article.cover}`}
+                            src={`/api/images/${article.coverImage}`}
                             alt="文章配图"
                             className="object-cover w-full h-full object-center"
                           />

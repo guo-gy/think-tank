@@ -12,15 +12,15 @@ async function getImageModel() {
     data: Buffer,
     userId: String,
     createdAt: { type: Date, default: Date.now },
-  }, { collection: 'uploads_images' });
+  }, { collection: 'images' });
   return mongoose.models.Image || mongoose.model('Image', ImageSchema);
 }
 
 export const runtime = 'nodejs';
 
-// 统一图片访问/下载/删除接口 GET/DELETE /images/[id]
+// 统一图片访问/下载/删除接口 GET/DELETE /api/images/[id]
 export async function GET(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   if (!id) return NextResponse.json({ message: '缺少图片id' }, { status: 400 });
   const Image = await getImageModel();
   const doc = await Image.findById(id);
@@ -36,7 +36,7 @@ export async function GET(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   if (!id) return NextResponse.json({ message: '缺少图片id' }, { status: 400 });
   const Image = await getImageModel();
   const doc = await Image.findByIdAndDelete(id);
@@ -44,4 +44,4 @@ export async function DELETE(req, { params }) {
   return NextResponse.json({ message: '图片已删除', id });
 }
 
-// 仅处理 GET/DELETE，POST 上传由 /images/route.js 处理
+// 仅处理 GET/DELETE，POST 上传由 /api/images/route.js 处理
