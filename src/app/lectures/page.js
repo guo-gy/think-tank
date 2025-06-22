@@ -1,38 +1,66 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-
-// 示例分类
-const categories = [
-  { id: "all", name: "全部" },
-  { id: "study", name: "学习经验" },
-  { id: "life", name: "生活分享" },
-  { id: "career", name: "升学就业" },
-];
-
-// 示例讲义数据
-const lectureList = [
-  { id: 1, title: "高数学习方法分享", category: "study", desc: "学长带你突破高数难关，掌握高效学习技巧。", img: "/images/1.jpg" },
-  { id: 2, title: "宿舍生活小妙招", category: "life", desc: "如何打造舒适的宿舍环境，提升生活幸福感。", img: "/images/2.jpg" },
-  { id: 3, title: "考研经验交流", category: "career", desc: "考研备考全流程、心态调整与资料推荐。", img: "/images/3.jpg" },
-  { id: 4, title: "英语四级高分心得", category: "study", desc: "英语四级高分学姐的备考经验与资源分享。", img: "/images/1.jpg" },
-  { id: 5, title: "校园兼职与实习", category: "career", desc: "如何寻找合适的兼职和实习机会，提升能力。", img: "/images/2.jpg" },
-  { id: 6, title: "健康饮食指南", category: "life", desc: "大学生健康饮食建议，合理搭配营养。", img: "/images/3.jpg" },
-  { id: 7, title: "时间管理与自律", category: "study", desc: "高效时间管理方法，助你学业与生活兼顾。", img: "/images/1.jpg" },
-  { id: 8, title: "简历制作与面试技巧", category: "career", desc: "求职简历制作要点与常见面试问题解析。", img: "/images/2.jpg" },
-  // ...可继续添加更多讲义
-];
+import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 5;
 
 export default function LecturesPage() {
+  const { data: session } = useSession();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
+  const [lectureList, setLectureList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // 过滤讲义
-  const filteredLectures = selectedCategory === "all"
-    ? lectureList
-    : lectureList.filter(n => n.category === selectedCategory);
+  // 判断是否管理员
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
+    const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
+    fetch(`/api/articles?partition=LECTURE&status=${statusParam}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        setLectureList(data.data || []);
+      })
+      .catch((err) => {
+        setError("讲义加载失败");
+        toast.error("讲义加载失败");
+      })
+      .finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  // 动态提取所有分类
+  const categories = useMemo(() => {
+    const set = new Set();
+    lectureList.forEach(item => {
+      if (item.category) set.add(item.category);
+    });
+    let arr = [
+      { id: "all", name: "全部" },
+      ...Array.from(set).map(cat => ({ id: cat, name: cat }))
+    ];
+    // 管理员加“审核中”
+    if (isAdmin) arr.push({ id: "pending", name: "审核中" });
+    return arr;
+  }, [lectureList, isAdmin]);
+
+  // 分类过滤
+  let filteredLectures = lectureList;
+  if (selectedCategory === "pending") {
+    filteredLectures = lectureList.filter(n => n.status === "PENDING");
+  } else if (selectedCategory !== "all") {
+    filteredLectures = lectureList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
+  } else {
+    filteredLectures = lectureList.filter(n => n.status === "PUBLIC");
+  }
 
   // 分页
   const totalPages = Math.max(1, Math.ceil(filteredLectures.length / PAGE_SIZE));
@@ -42,6 +70,37 @@ export default function LecturesPage() {
   function handleCategoryChange(catId) {
     setSelectedCategory(catId);
     setPage(1);
+  }
+
+  // 审核通过
+  async function handleApprove(id) {
+    try {
+      const res = await fetch(`/api/articles/${id}/approve`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('审核通过！');
+        setLectureList(list => list.map(a => a._id === id ? { ...a, status: 'PUBLIC' } : a));
+      } else {
+        toast.error(data.message || '审核失败');
+      }
+    } catch {
+      toast.error('审核失败');
+    }
+  }
+  // 审核拒绝
+  async function handleReject(id) {
+    try {
+      const res = await fetch(`/api/articles/${id}/approve`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('已拒绝！');
+        setLectureList(list => list.map(a => a._id === id ? { ...a, status: 'PRIVATE' } : a));
+      } else {
+        toast.error(data.message || '操作失败');
+      }
+    } catch {
+      toast.error('操作失败');
+    }
   }
 
   return (
@@ -75,30 +134,27 @@ export default function LecturesPage() {
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">讲义列表</h2>
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
-              {pagedLectures.length === 0 && (
+              {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
+              {error && <div className="text-red-400 text-center py-10">{error}</div>}
+              {!loading && !error && pagedLectures.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类讲义</div>
               )}
               {pagedLectures.map(item => (
-                <Link
-                  key={item.id}
-                  href={`/lectures/${item.id}`}
-                  className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
-                >
+                <div key={item._id} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
                   <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
                       <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{item.desc}</span>
+                      <span className="text-sm text-gray-500 mt-1">{item.excerpt || item.description || item.content?.slice(0, 40) || ''}</span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                    {item.img && (
-                      <div className="relative w-1/2 h-full min-w-[5rem] z-0">
+                    {item.cover && (
+                      <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                         <img
-                          src={item.img}
+                          src={item.cover}
                           alt="讲义配图"
                           className="object-cover w-full h-full object-center"
                         />
-                        {/* 渐变遮罩，仅在图片区域内，宽度加大 */}
                         <div
                           className="absolute top-0 left-0 h-full w-full pointer-events-none"
                           style={{
@@ -108,7 +164,20 @@ export default function LecturesPage() {
                       </div>
                     )}
                   </div>
-                </Link>
+                  {/* 审核操作，仅管理员且PENDING可见 */}
+                  {isAdmin && item.status === 'PENDING' && (
+                    <div className="flex gap-2 p-4 bg-yellow-50 border-t border-yellow-200">
+                      <button
+                        onClick={() => handleApprove(item._id)}
+                        className="flex-1 rounded-xl bg-green-100 text-green-700 font-bold py-2 hover:bg-green-200 transition-all"
+                      >审核通过</button>
+                      <button
+                        onClick={() => handleReject(item._id)}
+                        className="flex-1 rounded-xl bg-red-100 text-red-700 font-bold py-2 hover:bg-red-200 transition-all"
+                      >审核拒绝</button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             {/* 分页器 */}

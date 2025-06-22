@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -16,25 +16,13 @@ function GlassCard({ children, className = '' }) {
 }
 
 export default function HomePage() {
-  const newsList = [
-    { id: 1, title: '智库官网全新上线', desc: '欢迎访问我们的新平台！', img: '/images/1.jpg' },
-    { id: 2, title: '运营部月度简报', desc: '本月运营数据创新高。', img: '/images/2.jpg' },
-    { id: 3, title: '行业动态速递', desc: '最新行业资讯一览。', img: '/images/3.jpg' },
-    { id: 4, title: '活动预告', desc: '下月精彩活动不容错过。', img: '/images/1.jpg' },
-  ];
-  const downloadList = [
-    { id: 1, title: '2025年资料包', desc: '最新学习资料免费下载。', img: '/images/1.jpg' },
-    { id: 2, title: '行业报告合集', desc: '权威报告一键获取。', img: '/images/2.jpg' },
-  ];
-  const lectureList = [
-    { id: 1, title: '高效学习方法', desc: '朋辈部讲师经验分享。', img: '/images/1.jpg' },
-    { id: 2, title: '时间管理讲义', desc: '助你高效规划每一天。', img: '/images/2.jpg' },
-  ];
-  const noticeList = [
-    { id: 1, title: '五一放假通知', desc: '放假时间及安排说明。', img: '/images/3.jpg' },
-    { id: 2, title: '朋辈部纳新公告', desc: '欢迎新成员加入！', img: '/images/2.jpg' },
-  ];
+  // 后端数据
+  const [newsList, setNewsList] = useState([]);
+  const [downloadList, setDownloadList] = useState([]);
+  const [lectureList, setLectureList] = useState([]);
+  const [noticeList, setNoticeList] = useState([]);
 
+  // 轮播图图片
   const carouselImages = [
     '/images/1.jpg',
     '/images/2.jpg',
@@ -43,49 +31,90 @@ export default function HomePage() {
     '/images/5.jpg',
   ];
 
+  // 拉取各分区最新5条
+  useEffect(() => {
+    fetch('/api/articles?partition=NEWS&status=PUBLIC')
+      .then(res => res.json())
+      .then(data => setNewsList((data.data || []).slice(0, 5)));
+    fetch('/api/articles?partition=DOWNLOAD&status=PUBLIC')
+      .then(res => res.json())
+      .then(data => setDownloadList((data.data || []).slice(0, 5)));
+    fetch('/api/articles?partition=LECTURE&status=PUBLIC')
+      .then(res => res.json())
+      .then(data => setLectureList((data.data || []).slice(0, 5)));
+    fetch('/api/articles?partition=NOTICE&status=PUBLIC')
+      .then(res => res.json())
+      .then(data => setNoticeList((data.data || []).slice(0, 5)));
+  }, []);
+
   const scrollRef = useRef(null);
 
-  // 鼠标拖动横向滚动（需用 pointer 事件防止被子元素拦截）
-  function handleDragScroll(ref) {
-    let isDown = false;
-    let startX, scrollLeft;
-    const el = ref.current;
+  // 仅保留鼠标滚轮横向滚动
+  React.useEffect(() => {
+    const el = scrollRef.current;
     if (!el) return;
+    if (el._hasWheelScroll) return;
+    el._hasWheelScroll = true;
 
-    // 只绑定一次
-    if (el._hasDragScroll) return;
-    el._hasDragScroll = true;
-
-    el.addEventListener('pointerdown', (e) => {
-      isDown = true;
-      el.classList.add('cursor-grabbing');
-      startX = e.pageX;
-      scrollLeft = el.scrollLeft;
-    });
-    el.addEventListener('pointerleave', () => {
-      isDown = false;
-      el.classList.remove('cursor-grabbing');
-    });
-    el.addEventListener('pointerup', () => {
-      isDown = false;
-      el.classList.remove('cursor-grabbing');
-    });
-    el.addEventListener('pointermove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX;
-      const walk = (x - startX) * 1.2;
-      el.scrollLeft = scrollLeft - walk;
-    });
-
-    // 鼠标滚轮横向滚动
-    el.addEventListener('wheel', (e) => {
+    const onWheel = (e) => {
+      // 如果事件来自轮播图（Swiper），则不滚动主页面
+      if (
+        e.target.closest('.swiper') ||
+        e.target.classList.contains('swiper') ||
+        e.target.closest('.swiper-container')
+      ) {
+        return;
+      }
       if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
         el.scrollLeft += e.deltaY;
         e.preventDefault();
       }
-    }, { passive: false });
-  }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+
+    // 鼠标拖动横向滚动
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const onPointerDown = (e) => {
+      // 只允许鼠标左键
+      if (e.button !== 0) return;
+      // 如果事件来自轮播图（Swiper），则不拖动主页面
+      if (
+        e.target.closest('.swiper') ||
+        e.target.classList.contains('swiper') ||
+        e.target.closest('.swiper-container')
+      ) {
+        return;
+      }
+      isDown = true;
+      el.classList.add('cursor-grabbing');
+      startX = e.pageX || e.touches?.[0]?.pageX;
+      scrollLeft = el.scrollLeft;
+    };
+    const onPointerMove = (e) => {
+      if (!isDown) return;
+      const x = e.pageX || e.touches?.[0]?.pageX;
+      const walk = x - startX;
+      el.scrollLeft = scrollLeft - walk;
+    };
+    const onPointerUp = () => {
+      isDown = false;
+      el.classList.remove('cursor-grabbing');
+    };
+
+    el.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, []);
 
   // 左右箭头滑动
   const scrollBy = (offset) => {
@@ -94,12 +123,6 @@ export default function HomePage() {
     }
   };
 
-  useEffect(() => {
-    handleDragScroll(scrollRef);
-  }, []);
-
-  // 四个大卡片分别占据屏幕宽度的0.7, 0.5, 0.5, 0.5
-  // 横向滑动，顶部多留空间，卡片有圆角和间距，卡片内部不可滚动，内容自适应
   return (
     <div className="fixed inset-0 w-full h-screen bg-gradient-to-br from-indigo-100 via-blue-50 to-white overflow-hidden">
       <div className="w-full h-full pt-[96px] relative">
@@ -122,7 +145,7 @@ export default function HomePage() {
         </button>
         <div
           ref={scrollRef}
-          className="flex flex-row h-[calc(100vh-96px)] gap-12 px-8 pb-8 overflow-x-auto cursor-grab select-none scrollbar-hide"
+          className="flex flex-row h-[calc(100vh-96px)] gap-12 px-8 pb-8 overflow-x-auto select-none scrollbar-hide cursor-grab"
           style={{
             userSelect: "none",
             scrollbarWidth: "none",
@@ -175,11 +198,11 @@ export default function HomePage() {
                   loop
                   className="h-full rounded-2xl"
                 >
-                  {carouselImages.map((src, idx) => (
-                    <SwiperSlide key={idx}>
+                  {newsList.map((item, idx) => (
+                    <SwiperSlide key={item._id || idx}>
                       <div className="relative w-full h-full" style={{ minHeight: 200 }}>
                         <Image
-                          src={src}
+                          src={item.cover || '/images/1.jpg'}
                           alt={`轮播图${idx + 1}`}
                           fill
                           className="object-cover w-full h-full rounded-3xl shadow-lg"
@@ -187,10 +210,10 @@ export default function HomePage() {
                           priority={idx === 0}
                         />
                         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent text-white px-6 py-6 rounded-b-2xl">
-                          <Link href={`/news/${newsList[idx]?.id || ''}`}>
-                            <span className="hover:underline cursor-pointer text-xl font-bold text-white">{newsList[idx]?.title || ''}</span>
+                          <Link href={`/${item._id || ''}`}>
+                            <span className="hover:underline cursor-pointer text-xl font-bold text-white">{item.title || ''}</span>
                           </Link>
-                          <div className="text-sm text-white mt-1">{newsList[idx]?.desc || ''}</div>
+                          <div className="text-sm text-white mt-1">{item.excerpt || item.description || item.content?.slice(0, 40) || ''}</div>
                         </div>
                       </div>
                     </SwiperSlide>
@@ -224,17 +247,17 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 mt-8">
               {noticeList.map(item => (
                 <div
-                  key={item.id}
+                  key={item._id}
                   className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.desc}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
                   </div>
-                  {item.img && (
+                  {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.img}
+                        src={item.cover}
                         alt="公告配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -286,17 +309,17 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 mt-8">
               {downloadList.map(item => (
                 <div
-                  key={item.id}
+                  key={item._id}
                   className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.desc}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
                   </div>
-                  {item.img && (
+                  {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.img}
+                        src={item.cover}
                         alt="资料配图"
                         fill
                         className="object-cover w-full h-full object-center"
@@ -347,17 +370,17 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 mt-8">
               {lectureList.map(item => (
                 <div
-                  key={item.id}
+                  key={item._id}
                   className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.desc}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
                   </div>
-                  {item.img && (
+                  {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
                       <Image
-                        src={item.img}
+                        src={item.cover}
                         alt="讲义配图"
                         fill
                         className="object-cover w-full h-full object-center"

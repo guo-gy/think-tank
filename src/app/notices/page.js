@@ -1,38 +1,66 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-
-// 示例分类
-const categories = [
-  { id: "all", name: "全部" },
-  { id: "academic", name: "学术通知" },
-  { id: "affair", name: "教务通知" },
-  { id: "life", name: "生活服务" },
-];
-
-// 示例通知数据
-const noticeList = [
-  { id: 1, title: "2025年春季学期选课通知", category: "affair", desc: "选课系统将于3月1日开放，请同学们及时选课。", img: "/images/1.jpg" },
-  { id: 2, title: "校园用电检修公告", category: "life", desc: "3月5日校园部分区域将进行用电检修，请注意安全。", img: "/images/2.jpg" },
-  { id: 3, title: "学术讲座：人工智能前沿", category: "academic", desc: "邀请知名专家讲解AI最新进展，欢迎参加。", img: "/images/3.jpg" },
-  { id: 4, title: "期末考试安排", category: "affair", desc: "期末考试时间及地点安排已公布，请查阅。", img: "/images/1.jpg" },
-  { id: 5, title: "宿舍卫生检查", category: "life", desc: "本周将进行宿舍卫生检查，请同学们做好准备。", img: "/images/2.jpg" },
-  { id: 6, title: "科研项目申报通知", category: "academic", desc: "2025年度科研项目申报工作已启动。", img: "/images/3.jpg" },
-  { id: 7, title: "毕业论文提交说明", category: "affair", desc: "毕业论文提交截止时间为5月30日。", img: "/images/1.jpg" },
-  { id: 8, title: "食堂菜单更新", category: "life", desc: "本月起食堂菜单有调整，敬请关注。", img: "/images/2.jpg" },
-  // ...可继续添加更多通知
-];
+import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 5;
 
 export default function NoticesPage() {
+  const { data: session } = useSession();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
+  const [noticeList, setNoticeList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // 过滤通知
-  const filteredNotices = selectedCategory === "all"
-    ? noticeList
-    : noticeList.filter(n => n.category === selectedCategory);
+  // 判断是否管理员
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
+    const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
+    fetch(`/api/articles?partition=NOTICE&status=${statusParam}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        setNoticeList(data.data || []);
+      })
+      .catch((err) => {
+        setError("通知加载失败");
+        toast.error("通知加载失败");
+      })
+      .finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  // 动态提取所有分类
+  const categories = useMemo(() => {
+    const set = new Set();
+    noticeList.forEach(item => {
+      if (item.category) set.add(item.category);
+    });
+    let arr = [
+      { id: "all", name: "全部" },
+      ...Array.from(set).map(cat => ({ id: cat, name: cat }))
+    ];
+    // 管理员加“审核中”
+    if (isAdmin) arr.push({ id: "pending", name: "审核中" });
+    return arr;
+  }, [noticeList, isAdmin]);
+
+  // 分类过滤
+  let filteredNotices = noticeList;
+  if (selectedCategory === "pending") {
+    filteredNotices = noticeList.filter(n => n.status === "PENDING");
+  } else if (selectedCategory !== "all") {
+    filteredNotices = noticeList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
+  } else {
+    filteredNotices = noticeList.filter(n => n.status === "PUBLIC");
+  }
 
   // 分页
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE));
@@ -42,6 +70,37 @@ export default function NoticesPage() {
   function handleCategoryChange(catId) {
     setSelectedCategory(catId);
     setPage(1);
+  }
+
+  // 审核通过
+  async function handleApprove(id) {
+    try {
+      const res = await fetch(`/api/articles/${id}/approve`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('审核通过！');
+        setNoticeList(list => list.map(a => a._id === id ? { ...a, status: 'PUBLIC' } : a));
+      } else {
+        toast.error(data.message || '审核失败');
+      }
+    } catch {
+      toast.error('审核失败');
+    }
+  }
+  // 审核拒绝
+  async function handleReject(id) {
+    try {
+      const res = await fetch(`/api/articles/${id}/approve`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('已拒绝！');
+        setNoticeList(list => list.map(a => a._id === id ? { ...a, status: 'PRIVATE' } : a));
+      } else {
+        toast.error(data.message || '操作失败');
+      }
+    } catch {
+      toast.error('操作失败');
+    }
   }
 
   return (
@@ -75,30 +134,27 @@ export default function NoticesPage() {
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">通知列表</h2>
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
-              {pagedNotices.length === 0 && (
+              {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
+              {error && <div className="text-red-400 text-center py-10">{error}</div>}
+              {!loading && !error && pagedNotices.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类通知</div>
               )}
-              {pagedNotices.map(notice => (
-                <Link
-                  key={notice.id}
-                  href={`/notices/${notice.id}`}
-                  className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
-                >
-                  <div className="flex flex-row h-28 relative">
+              {pagedNotices.map(item => (
+                <div key={item._id} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+                  <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
-                      <span className="text-lg font-semibold text-gray-800">{notice.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{notice.desc}</span>
+                      <span className="text-base font-semibold text-gray-800">{item.title}</span>
+                      <span className="text-sm text-gray-500 mt-1">{item.excerpt || item.description || item.content?.slice(0, 40) || ''}</span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                    {notice.img && (
-                      <div className="relative w-1/2 h-full min-w-[6rem] z-0">
+                    {item.cover && (
+                      <div className="relative w-2/3 h-full min-w-[6rem] z-0">
                         <img
-                          src={notice.img}
+                          src={item.cover}
                           alt="通知配图"
                           className="object-cover w-full h-full object-center"
                         />
-                        {/* 渐变遮罩，仅在图片区域内，宽度加大 */}
                         <div
                           className="absolute top-0 left-0 h-full w-full pointer-events-none"
                           style={{
@@ -108,7 +164,20 @@ export default function NoticesPage() {
                       </div>
                     )}
                   </div>
-                </Link>
+                  {/* 审核操作，仅管理员且PENDING可见 */}
+                  {isAdmin && item.status === 'PENDING' && (
+                    <div className="flex gap-2 p-4 bg-blue-50 border-t border-blue-200">
+                      <button
+                        onClick={() => handleApprove(item._id)}
+                        className="flex-1 rounded-xl bg-green-100 text-green-700 font-bold py-2 hover:bg-green-200 transition-all"
+                      >审核通过</button>
+                      <button
+                        onClick={() => handleReject(item._id)}
+                        className="flex-1 rounded-xl bg-red-100 text-red-700 font-bold py-2 hover:bg-red-200 transition-all"
+                      >审核拒绝</button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             {/* 分页器 */}

@@ -1,38 +1,66 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-
-// 示例分类
-const categories = [
-  { id: "all", name: "全部" },
-  { id: "doc", name: "文档资料" },
-  { id: "form", name: "表格模板" },
-  { id: "guide", name: "操作指南" },
-];
-
-// 示例下载数据
-const downloadList = [
-  { id: 1, title: "学生手册.pdf", category: "doc", desc: "最新学生手册电子版，供下载参考。", img: "/images/1.jpg" },
-  { id: 2, title: "请假条模板.docx", category: "form", desc: "标准请假条模板，支持打印填写。", img: "/images/2.jpg" },
-  { id: 3, title: "实验报告模板.docx", category: "form", desc: "实验课程通用报告模板。", img: "/images/3.jpg" },
-  { id: 4, title: "校园网使用指南.pdf", category: "guide", desc: "校园网账号申请与使用详细说明。", img: "/images/1.jpg" },
-  { id: 5, title: "毕业论文格式要求.pdf", category: "doc", desc: "毕业论文排版及格式要求文档。", img: "/images/2.jpg" },
-  { id: 6, title: "奖学金申请表.xlsx", category: "form", desc: "奖学金申请专用表格。", img: "/images/3.jpg" },
-  { id: 7, title: "教务系统操作手册.pdf", category: "guide", desc: "教务系统常用功能操作手册。", img: "/images/1.jpg" },
-  { id: 8, title: "学籍异动申请表.docx", category: "form", desc: "学籍异动相关申请表格。", img: "/images/2.jpg" },
-  // ...可继续添加更多资料
-];
+import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 5;
 
 export default function DownloadsPage() {
+  const { data: session } = useSession();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
+  const [downloadList, setDownloadList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // 过滤资料
-  const filteredDownloads = selectedCategory === "all"
-    ? downloadList
-    : downloadList.filter(n => n.category === selectedCategory);
+  // 判断是否管理员
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
+    const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
+    fetch(`/api/articles?partition=DOWNLOAD&status=${statusParam}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        setDownloadList(data.data || []);
+      })
+      .catch((err) => {
+        setError("资料加载失败");
+        toast.error("资料加载失败");
+      })
+      .finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  // 动态提取所有分类
+  const categories = useMemo(() => {
+    const set = new Set();
+    downloadList.forEach(item => {
+      if (item.category) set.add(item.category);
+    });
+    let arr = [
+      { id: "all", name: "全部" },
+      ...Array.from(set).map(cat => ({ id: cat, name: cat }))
+    ];
+    // 管理员加“审核中”
+    if (isAdmin) arr.push({ id: "pending", name: "审核中" });
+    return arr;
+  }, [downloadList, isAdmin]);
+
+  // 分类过滤
+  let filteredDownloads = downloadList;
+  if (selectedCategory === "pending") {
+    filteredDownloads = downloadList.filter(n => n.status === "PENDING");
+  } else if (selectedCategory !== "all") {
+    filteredDownloads = downloadList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
+  } else {
+    filteredDownloads = downloadList.filter(n => n.status === "PUBLIC");
+  }
 
   // 分页
   const totalPages = Math.max(1, Math.ceil(filteredDownloads.length / PAGE_SIZE));
@@ -75,30 +103,31 @@ export default function DownloadsPage() {
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">资料列表</h2>
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
-              {pagedDownloads.length === 0 && (
+              {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
+              {error && <div className="text-red-400 text-center py-10">{error}</div>}
+              {!loading && !error && pagedDownloads.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类资料</div>
               )}
               {pagedDownloads.map(item => (
                 <Link
-                  key={item.id}
-                  href={`/downloads/${item.id}`}
+                  key={item._id}
+                  href={`/${item._id}`}
                   className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
                   <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
                       <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{item.desc}</span>
+                      <span className="text-sm text-gray-500 mt-1">{item.description || item.desc || ''}</span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                    {item.img && (
-                      <div className="relative w-1/2 h-full min-w-[5rem] z-0">
+                    {item.cover && (
+                      <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                         <img
-                          src={item.img}
+                          src={item.cover}
                           alt="资料配图"
                           className="object-cover w-full h-full object-center"
                         />
-                        {/* 渐变遮罩，仅在图片区域内，宽度加大 */}
                         <div
                           className="absolute top-0 left-0 h-full w-full pointer-events-none"
                           style={{

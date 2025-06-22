@@ -7,41 +7,70 @@ const ArticleSchema = new mongoose.Schema({
         required: [true, 'Please provide a title.'],
         trim: true,
     },
-    slug: { // 用于 URL, e.g., my-first-article
-        type: String,
-        required: [true, 'Please provide a slug.'],
-        unique: true,
-        trim: true,
-    },
-    content: { // 可以是 Markdown 或 HTML
-        type: String,
+    content: {
+        type: String, // markdown 或 html
         required: [true, 'Please provide content.'],
     },
-    excerpt: { // 摘要
+    contentType: {
+        type: String,
+        enum: ['markdown', 'mainAttachment'],
+        default: 'markdown',
+    },
+    description: {
         type: String,
         trim: true,
     },
-    isPublished: {
-        type: Boolean,
-        default: false,
+    coverImage: {
+        data: Buffer, // 封面图二进制
+        mimeType: { type: String, enum: ['image/jpeg', 'image/png'], default: 'image/png' },
+    },
+    attachments: [
+        {
+            fileName: { type: String, required: true },
+            fileType: {
+                type: String,
+                enum: [
+                  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'zip',
+                  'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'
+                ],
+                required: true,
+            },
+            size: { type: Number }, // 字节数
+            fileData: { type: Buffer, required: true }, // 文件二进制内容
+            mimeType: { type: String, required: true }, // 文件 MIME 类型
+            url: { type: String, trim: true }, // 可选，兼容外链
+        }
+    ],
+    status: {
+        type: String,
+        enum: ['PRIVATE', 'PENDING', 'PUBLIC'],
+        default: 'PRIVATE',
     },
     author: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // 引用 User 模型
+        ref: 'User',
         required: true,
     },
-    type: { // 资讯 NEWS 或 知识库 KNOWLEDGE
+    partition: {
         type: String,
-        enum: ['NEWS', 'KNOWLEDGE'],
-        default: 'NEWS',
+        enum: ['NEWS', 'NOTICE', 'DOWNLOAD', 'LECTURE'],
+        required: true,
     },
-    category: { // 可选的分类
-        type: String, // 可以简单地用字符串，或者更复杂地引用一个 Category 模型
+    category: {
+        type: String, // 分类自定义
         trim: true,
     },
-    tags: [{ // 标签
-        type: String,
+    subCategory: {
+        type: String, // 小分类自定义（如有）
         trim: true,
+    },
+    commentIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+    }],
+    likes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
     }],
     createdAt: {
         type: Date,
@@ -64,5 +93,9 @@ ArticleSchema.pre('findOneAndUpdate', function (next) {
     next();
 });
 
+// 防止模型缓存导致的 schema 不一致
+if (mongoose.models.Article) {
+  delete mongoose.models.Article;
+}
 
 export default mongoose.models.Article || mongoose.model('Article', ArticleSchema);

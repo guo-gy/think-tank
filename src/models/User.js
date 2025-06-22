@@ -3,7 +3,7 @@
 import mongoose from 'mongoose';
 const { Schema, model, models } = mongoose;
 
-const UserSchema = new Schema({ // 直接使用解构出来的 Schema
+const UserSchema = new Schema({
     username: {
         type: String,
         required: [true, 'Please provide a username.'],
@@ -22,11 +22,39 @@ const UserSchema = new Schema({ // 直接使用解构出来的 Schema
         required: [true, 'Please provide a password.'],
         select: false,
     },
+    avatar: {
+        type: Buffer, // 直接存储图片二进制
+    },
+    avatarType: {
+        type: String, // 图片类型
+        enum: ['image/jpeg', 'image/png'],
+        default: 'image/png',
+    },
+    bio: {
+        type: String, // 简介
+        trim: true,
+    },
     role: {
         type: String,
-        enum: ['USER', 'ADMIN'],
+        enum: ['USER', 'ADMIN', 'SUPER_ADMIN'],
         default: 'USER',
     },
+    likedArticles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Article',
+    }],
+    likedComments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+    }],
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+    }],
+    articles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Article',
+    }],
     createdAt: {
         type: Date,
         default: Date.now,

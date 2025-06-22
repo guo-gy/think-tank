@@ -52,6 +52,7 @@ export default function Navbar() {
   const [focused, setFocused] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const navInputRef = useRef(null);
   const modalInputRef = useRef(null);
   const timerRef = useRef(null);
@@ -217,31 +218,52 @@ export default function Navbar() {
 
             {status === "authenticated" && session && (
               <>
-                {session.user.role === 'ADMIN' && (
-                  <>
-                    <Link
-                      href="/admin/articles/new"
-                      className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-semibold py-1.5 px-3 rounded-md transition-colors shadow-sm"
-                    >
-                      发布文章
-                    </Link>
-                    <Link
-                      href="/admin/dashboard"
-                      className="hover:text-indigo-600 transition-colors font-medium px-2"
-                    >
-                      管理后台
-                    </Link>
-                  </>
-                )}
-                <span className="hidden md:inline text-sm text-gray-700 px-2">
-                  欢迎, <span className="font-semibold">{session.user.username || session.user.name || session.user.email}</span>
-                </span>
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-1.5 px-4 rounded-md transition-colors ml-2"
+                <Link
+                  href="/write"
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold py-1.5 px-4 rounded-md transition-colors shadow-sm mr-2"
                 >
-                  退出
-                </button>
+                  发布
+                </Link>
+                {session.user.role === 'SUPER_ADMIN' && (
+                  <Link
+                    href="/admin/permissions"
+                    className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-1.5 px-4 rounded-md transition-colors shadow-sm mr-2"
+                  >
+                    权限管理
+                  </Link>
+                )}
+                <div className="relative group">
+                  <button
+                    className="md:inline text-sm text-gray-700 px-2 font-semibold hover:text-indigo-700 transition-colors flex items-center gap-1 focus:outline-none"
+                    onClick={() => setShowUserMenu((v) => !v)}
+                    onBlur={() => setTimeout(() => setShowUserMenu(false), 150)}
+                    tabIndex={0}
+                    style={{ minWidth: 0 }}
+                  >
+                    <span>{session.user.username || session.user.name || session.user.email}</span>
+                  </button>
+                  {/* 二级菜单 */}
+                  {showUserMenu && (
+                    <div
+                      className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 animate-fade-in"
+                      onMouseDown={e => e.preventDefault()}
+                    >
+                      <Link
+                        href="/profile"
+                        className="block px-4 py-2 text-gray-700 hover:bg-indigo-50 rounded-t-xl transition-colors text-sm"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        个人中心
+                      </Link>
+                      <button
+                        onClick={() => { setShowUserMenu(false); signOut({ callbackUrl: '/' }); }}
+                        className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 rounded-b-xl transition-colors text-sm"
+                      >
+                        退出登录
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

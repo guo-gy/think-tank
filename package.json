@@ -9,15 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "saslprep": "^1.0.3",
     "bcryptjs": "^3.0.2",
     "geist": "^1.4.2",
+    "github-markdown-css": "^5.8.1",
+    "marked": "^15.0.12",
     "mongoose": "^8.16.0",
     "next": "15.3.4",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
+    "saslprep": "^1.0.3",
     "swiper": "^11.2.8"
   },
   "devDependencies": {

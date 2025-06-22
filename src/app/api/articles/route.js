@@ -11,39 +11,81 @@ export async function POST(request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return NextResponse.json({ message: '未认证，禁止访问' }, { status: 401 });
-  }
-
-  if (session.user.role !== 'ADMIN') {
-    return NextResponse.json({ message: '无权限操作，需要管理员身份' }, { status: 403 });
+    return NextResponse.json({ message: '请先登录后再操作' }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    const body = await request.json();
-    const { title, slug, content, excerpt, type, category, tags, isPublished } = body;
+    // 支持 multipart/form-data 或 application/json
+    let body;
+    let isMultipart = false;
+    const reqContentType = request.headers.get('content-type') || '';
+    if (reqContentType.includes('multipart/form-data')) {
+      isMultipart = true;
+      // 这里建议用第三方库如 formidable-serverless 解析 multipart，略（如需可补充）
+      return NextResponse.json({ message: '暂不支持 multipart/form-data，请用 JSON 提交' }, { status: 400 });
+    } else {
+      body = await request.json();
+    }
+    const {
+      title,
+      content,
+      contentType = 'markdown',
+      description,
+      coverImage, // { data, mimeType } base64 或 Buffer，前端需配合
+      attachments = [], // [{ fileName, fileType, size, fileData, mimeType, url }]
+      status = 'PRIVATE',
+      partition, // 分区，四个固定
+      category, // 分类，自定义
+      subCategory,
+      tags = [],
+    } = body;
 
     // 基本校验
-    if (!title || !slug || !content) {
-      return NextResponse.json({ message: '标题、Slug 和内容不能为空' }, { status: 400 });
+    if (!title || !content || !partition) {
+      return NextResponse.json({ message: '标题、内容、分区不能为空' }, { status: 400 });
+    }
+    if (!['NEWS', 'NOTICE', 'DOWNLOAD', 'LECTURE'].includes(partition)) {
+      return NextResponse.json({ message: '分区不合法' }, { status: 400 });
+    }
+    if (!['markdown', 'mainAttachment'].includes(contentType)) {
+      return NextResponse.json({ message: '内容类型不合法' }, { status: 400 });
+    }
+    if (!['PRIVATE', 'PENDING', 'PUBLIC'].includes(status)) {
+      return NextResponse.json({ message: '文章状态不合法' }, { status: 400 });
     }
 
-    // 检查 slug 是否唯一
-    const existingArticle = await Article.findOne({ slug });
-    if (existingArticle) {
-      return NextResponse.json({ message: 'Slug 已存在，请使用唯一的 Slug' }, { status: 409 }); // 409 Conflict
+    // 组装 coverImage
+    let coverImageObj = undefined;
+    if (coverImage && coverImage.data && coverImage.mimeType) {
+      coverImageObj = {
+        data: Buffer.from(coverImage.data, coverImage.data instanceof Buffer ? undefined : 'base64'),
+        mimeType: coverImage.mimeType,
+      };
     }
+    // 组装附件
+    const attachmentsArr = (attachments || []).map(f => ({
+      fileName: f.fileName,
+      fileType: f.fileType,
+      size: f.size,
+      fileData: f.fileData ? Buffer.from(f.fileData, f.fileData instanceof Buffer ? undefined : 'base64') : undefined,
+      mimeType: f.mimeType,
+      url: f.url,
+    }));
 
     const newArticle = new Article({
       title,
-      slug,
       content,
-      excerpt,
-      type,
+      contentType,
+      description,
+      coverImage: coverImageObj,
+      attachments: attachmentsArr,
+      status,
+      author: session.user.id,
+      partition,
       category,
+      subCategory,
       tags,
-      isPublished,
-      author: session.user.id, // 从 session 中获取作者 ID
     });
 
     const savedArticle = await newArticle.save();
@@ -52,7 +94,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating article:', error);
-    // Mongoose 校验错误
     if (error.name === 'ValidationError') {
       let errors = {};
       for (let field in error.errors) {
@@ -64,18 +105,29 @@ export async function POST(request) {
   }
 }
 
-// GET /api/articles - 获取文章列表 (我们稍后会用到)
+// GET /api/articles - 获取文章列表
 export async function GET(request) {
-    // ... (获取文章列表的逻辑，现在可以先留空或返回一个简单消息)
-    try {
-        await dbConnect();
-        // 示例：获取所有已发布的文章
-        const articles = await Article.find({ isPublished: true })
-                                  .sort({ createdAt: -1 })
-                                  .populate('author', 'username');
-        return NextResponse.json({ success: true, data: articles }, { status: 200 });
-    } catch (error) {
-        console.error('Error fetching articles:', error);
-        return NextResponse.json({ message: '获取文章列表失败', error: error.message }, { status: 500 });
+  try {
+    await dbConnect();
+    // 支持按状态、分区、分类筛选
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || 'PUBLIC';
+    const partition = searchParams.get('partition');
+    const category = searchParams.get('category');
+    const filter = {};
+    if (status.includes(',')) {
+      filter.status = { $in: status.split(',') };
+    } else {
+      filter.status = status;
     }
+    if (partition) filter.partition = partition;
+    if (category) filter.category = category;
+    const articles = await Article.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('author', 'username');
+    return NextResponse.json({ success: true, data: articles }, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching articles:', error);
+    return NextResponse.json({ message: '获取文章列表失败', error: error.message }, { status: 500 });
+  }
 }

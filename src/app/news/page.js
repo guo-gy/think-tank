@@ -1,38 +1,66 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-
-// 示例数据
-const categories = [
-  { id: "all", name: "全部" },
-  { id: "school", name: "学校要闻" },
-  { id: "activity", name: "学生活动" },
-  { id: "notice", name: "通知公告" },
-];
-
-// 假设有更多新闻用于分页演示
-const newsList = [
-  { id: 1, title: "学校召开2025年发展大会", category: "school", desc: "学校2025年发展大会顺利召开，校领导发表重要讲话。", img: "/images/1.jpg" },
-  { id: 2, title: "学生会举办迎新晚会", category: "activity", desc: "迎新晚会精彩纷呈，师生反响热烈。", img: "/images/2.jpg" },
-  { id: 3, title: "关于暑假放假安排的通知", category: "notice", desc: "2025年暑假放假时间及相关安排。", img: "/images/3.jpg" },
-  { id: 4, title: "校运动会圆满落幕", category: "activity", desc: "运动会各项赛事顺利完成，师生积极参与。", img: "/images/1.jpg" },
-  { id: 5, title: "新学期教学安排", category: "school", desc: "新学期教学计划已发布，请同学们及时查阅。", img: "/images/2.jpg" },
-  { id: 6, title: "志愿服务活动启动", category: "activity", desc: "志愿服务活动正式启动，欢迎同学们报名参与。", img: "/images/3.jpg" },
-  { id: 7, title: "关于期末考试的通知", category: "notice", desc: "期末考试时间及注意事项，请查收。", img: "/images/1.jpg" },
-  { id: 8, title: "校友返校日活动", category: "school", desc: "校友返校日活动圆满举办，师生共叙情谊。", img: "/images/2.jpg" },
-  // ...可继续添加更多新闻
-];
+import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 5;
 
 export default function NewsPage() {
+  const { data: session } = useSession();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
+  const [newsList, setNewsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // 过滤新闻
-  const filteredNews = selectedCategory === "all"
-    ? newsList
-    : newsList.filter(n => n.category === selectedCategory);
+  // 判断是否管理员
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
+    const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
+    fetch(`/api/articles?partition=NEWS&status=${statusParam}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        setNewsList(data.data || []);
+      })
+      .catch((err) => {
+        setError("新闻加载失败");
+        toast.error("新闻加载失败");
+      })
+      .finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  // 动态提取所有分类（仅分区为NEWS的文章）
+  const categories = useMemo(() => {
+    const set = new Set();
+    newsList.forEach(item => {
+      if (item.category) set.add(item.category);
+    });
+    let arr = [
+      { id: "all", name: "全部" },
+      ...Array.from(set).map(cat => ({ id: cat, name: cat }))
+    ];
+    // 管理员加“审核中”
+    if (isAdmin) arr.push({ id: "pending", name: "审核中" });
+    return arr;
+  }, [newsList, isAdmin]);
+
+  // 分类过滤
+  let filteredNews = newsList;
+  if (selectedCategory === "pending") {
+    filteredNews = newsList.filter(n => n.status === "PENDING");
+  } else if (selectedCategory !== "all") {
+    filteredNews = newsList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
+  } else {
+    filteredNews = newsList.filter(n => n.status === "PUBLIC");
+  }
 
   // 分页
   const totalPages = Math.max(1, Math.ceil(filteredNews.length / PAGE_SIZE));
@@ -43,6 +71,8 @@ export default function NewsPage() {
     setSelectedCategory(catId);
     setPage(1);
   }
+
+  console.log(newsList);
 
   return (
     <div className="fixed inset-0 min-h-screen w-full bg-gradient-to-br from-red-100 via-red-50 to-white">
@@ -75,30 +105,31 @@ export default function NewsPage() {
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">新闻列表</h2>
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
-              {pagedNews.length === 0 && (
+              {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
+              {error && <div className="text-red-400 text-center py-10">{error}</div>}
+              {!loading && !error && pagedNews.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类新闻</div>
               )}
-              {pagedNews.map(news => (
+              {pagedNews.map(item => (
                 <Link
-                  key={news.id}
-                  href={`/news/${news.id}`}
+                  key={item._id}
+                  href={`/${item._id}`}
                   className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
-                  <div className="flex flex-row h-32 relative">
+                  <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
-                      <span className="text-lg font-semibold text-gray-800">{news.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{news.desc}</span>
+                      <span className="text-base font-semibold text-gray-800">{item.title}</span>
+                      <span className="text-sm text-gray-500 mt-1">{item.excerpt || item.description || item.content?.slice(0, 40) || ''}</span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
-                    {news.img && (
-                      <div className="relative w-2/3 h-full min-w-[6rem] z-0">
+                    {item.cover && (
+                      <div className="relative w-2/3 h-full min-w-[5rem] z-0">
                         <img
-                          src={news.img}
+                          src={item.cover}
                           alt="新闻配图"
                           className="object-cover w-full h-full object-center"
                         />
-                        {/* 渐变遮罩，仅在图片区域内，宽度加大 */}
                         <div
                           className="absolute top-0 left-0 h-full w-full pointer-events-none"
                           style={{
