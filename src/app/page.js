@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+import Hero3D from "@/components/Hero3D";
 
 // 现代化纯白卡片风格
 function GlassCard({ children, className = '' }) {
@@ -152,20 +153,16 @@ export default function HomePage() {
             msOverflowStyle: "none"
           }}
         >
-          {/* 智库介绍区 0.3 屏宽 */}
+          {/* 3D球体专属卡片（无背景、无阴影、无边框） */}
           <div
-            className="flex flex-col justify-center items-center h-full flex-shrink-0"
+            className="flex flex-col justify-center items-center h-full flex-shrink-0 p-12"
             style={{ width: '29vw', minWidth: 260, maxWidth: 520 }}
           >
             <div className="w-full h-full flex flex-col justify-center items-center px-6">
-              <h1 className="text-4xl font-extrabold text-indigo-700 mb-6 text-center">山东大学软件智库</h1>
-              <p className="text-lg text-gray-700 leading-relaxed text-center mb-4">
-                山东大学软件智库致力于服务师生、赋能成长，聚合校内外优质资源，打造集资讯、通知、资料、讲义于一体的综合性平台。<br />
-                我们关注学业、生活、就业等多元需求，助力每一位同学高效成长、全面发展。
-              </p>
-              <p className="text-base text-gray-500 text-center">
-                欢迎加入我们，共建共享智慧校园！
-              </p>
+             
+              <div className="w-full flex justify-center items-center mt-4 mb-4" style={{height:120, minHeight:90, maxHeight:150, position:'relative'}}>
+                <Hero3D />
+              </div>
             </div>
           </div>
           {/* 新闻资讯 0.7 屏宽 */}
@@ -406,6 +403,22 @@ export default function HomePage() {
               </Link>
             </div>
           </section>
+          {/* 介绍专属卡片（无背景、无阴影、无边框，排在最右） */}
+          <div
+            className="flex flex-col justify-center items-center h-full flex-shrink-0 p-12"
+            style={{ width: '29vw', minWidth: 260, maxWidth: 520 }}
+          >
+            <div className="w-full h-full flex flex-col justify-center items-center px-6">
+              <h1 className="text-4xl font-extrabold text-indigo-700 mb-4 text-center">山东大学软件智库</h1>
+              <p className="text-lg text-gray-700 leading-relaxed text-center mb-2">
+                山东大学软件智库致力于服务师生、赋能成长，聚合校内外优质资源，打造集资讯、通知、资料、讲义于一体的综合性平台。<br />
+                我们关注学业、生活、就业等多元需求，助力每一位同学高效成长、全面发展。
+              </p>
+              <p className="text-base text-gray-500 text-center mb-2">
+                欢迎加入我们，共建共享智慧校园！
+              </p>
+            </div>
+          </div>
         </div>
         <style jsx global>{`
           .scrollbar-hide::-webkit-scrollbar {
