@@ -2,25 +2,30 @@
 import mongoose from 'mongoose';
 
 const getEnv = (key) => {
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+  // 优先 Node.js 本地环境变量（如 Windows 的 set、PowerShell 的 $env:，或 Linux/Mac 的 export）
+  if (typeof process !== 'undefined' && process.env && Object.prototype.hasOwnProperty.call(process.env, key)) {
     return process.env[key];
   }
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const envPath = path.resolve(process.cwd(), '.env.local');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf-8');
-      const lines = envContent.split(/\r?\n/);
-      for (const line of lines) {
-        const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-        if (match && match[1] === key) {
-          return match[2];
+  // 其次 .env.local，再尝试 .env
+  const tryReadEnvFile = (filename) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const envPath = path.resolve(process.cwd(), filename);
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf-8');
+        const lines = envContent.split(/\r?\n/);
+        for (const line of lines) {
+          const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+          if (match && match[1] === key) {
+            return match[2];
+          }
         }
       }
-    }
-  } catch {}
-  return undefined;
+    } catch {}
+    return undefined;
+  };
+  return tryReadEnvFile('.env.local') || tryReadEnvFile('.env');
 };
 
 const MONGODB_URI = getEnv('MONGODB_URI');
