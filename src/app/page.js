@@ -362,9 +362,9 @@ export default function HomePage() {
             style={{ width: '29vw', minWidth: 260, maxWidth: 520 }}
           >
             <div className="w-full h-full flex flex-col justify-center items-center px-6">
-              <h1 className="text-4xl font-extrabold text-indigo-700 mb-4 text-center">山东大学软件智库</h1>
+              <h1 className="text-4xl font-extrabold text-indigo-700 mb-4 text-center">山东大学软件学院智库</h1>
               <p className="text-lg text-gray-700 leading-relaxed text-center mb-2">
-                山东大学软件智库致力于服务师生、赋能成长，聚合校内外优质资源，打造集资讯、通知、资料、讲义于一体的综合性平台。<br />
+                山东大学软件学院智库致力于服务师生、赋能成长，聚合校内外优质资源，打造集资讯、通知、资料、讲义于一体的综合性平台。<br />
                 我们关注学业、生活、就业等多元需求，助力每一位同学高效成长、全面发展。
               </p>
               <p className="text-base text-gray-500 text-center mb-2">
