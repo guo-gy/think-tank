@@ -75,23 +75,25 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // 停止输入0.5s后自动搜索
+  // 停止输入0.5s后自动搜索（改为后端请求）
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (search.trim()) {
-        setSearchResults([
-          { title: '智库官网全新上线', url: '/news/1' },
-          { title: '运营部月度简报', url: '/news/2' },
-          { title: '行业动态速递', url: '/news/3' },
-          { title: '活动预告', url: '/news/4' },
-          { title: '五一放假通知', url: '/notices/1' },
-          { title: '朋辈部纳新公告', url: '/notices/2' },
-        ].filter((item) => item.title.includes(search.trim())));
+        fetch(`/api/search?q=${encodeURIComponent(search.trim())}`)
+          .then(res => res.json())
+          .then(data => {
+            setSearchResults(data.results || []);
+            setActiveIndex(-1);
+          })
+          .catch(() => {
+            setSearchResults([]);
+            setActiveIndex(-1);
+          });
       } else {
         setSearchResults([]);
+        setActiveIndex(-1);
       }
-      setActiveIndex(-1);
     }, 500);
     return () => clearTimeout(timerRef.current);
   }, [search]);
