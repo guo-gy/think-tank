@@ -176,7 +176,7 @@ export default function Navbar() {
             <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            山东大学软件学院智库
+            山东大学软件学院智库(BETA)
           </Link>
 
           {/* 搜索框居中 */}
@@ -241,6 +241,22 @@ export default function Navbar() {
                     style={{ minWidth: 0 }}
                   >
                     <span>{session.user.username || session.user.name || session.user.email}</span>
+                    {session.user.role === 'SUPER_ADMIN' && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-300 shadow-sm animate-pulse">
+                        <svg className="w-3 h-3 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 2l6 3v4.5c0 4.418-2.94 8.418-6 9-3.06-.582-6-4.582-6-9V5l6-3z" />
+                        </svg>
+                        超级管理员
+                      </span>
+                    )}
+                    {session.user.role === 'ADMIN' && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-600 border border-blue-300 shadow-sm">
+                        <svg className="w-3 h-3 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 2l6 3v4.5c0 4.418-2.94 8.418-6 9-3.06-.582-6-4.582-6-9V5l6-3z" />
+                        </svg>
+                        管理员
+                      </span>
+                    )}
                   </button>
                   {/* 二级菜单 */}
                   {showUserMenu && (

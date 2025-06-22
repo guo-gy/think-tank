@@ -1,27 +1,47 @@
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import ImageModel from '@/models/Image';
+import mongoose from 'mongoose';
 
-export async function GET(req, context) {
-  const params = typeof context.params?.then === 'function' ? await context.params : context.params;
-  const { id } = params;
+// MongoDB 图片模型
+async function getImageModel() {
   await dbConnect();
-  if (!id) {
-    return new Response('参数缺失', { status: 400 });
-  }
-  try {
-    const imageDoc = await ImageModel.findById(id);
-    if (!imageDoc || !imageDoc.data) {
-      return new Response('未找到图片', { status: 404 });
-    }
-    let contentType = imageDoc.contentType || 'application/octet-stream';
-    return new Response(imageDoc.data.buffer, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
-  } catch (err) {
-    return new Response('服务器错误', { status: 500 });
-  }
+  const ImageSchema = new mongoose.Schema({
+    filename: String,
+    contentType: String,
+    size: Number,
+    data: Buffer,
+    userId: String,
+    createdAt: { type: Date, default: Date.now },
+  }, { collection: 'uploads_images' });
+  return mongoose.models.Image || mongoose.model('Image', ImageSchema);
 }
+
+export const runtime = 'nodejs';
+
+// 统一图片访问/下载/删除接口 GET/DELETE /images/[id]
+export async function GET(req, { params }) {
+  const { id } = params;
+  if (!id) return NextResponse.json({ message: '缺少图片id' }, { status: 400 });
+  const Image = await getImageModel();
+  const doc = await Image.findById(id);
+  if (!doc) return NextResponse.json({ message: '图片不存在' }, { status: 404 });
+  return new NextResponse(doc.data.buffer, {
+    status: 200,
+    headers: {
+      'Content-Type': doc.contentType || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(doc.filename)}"`,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  });
+}
+
+export async function DELETE(req, { params }) {
+  const { id } = params;
+  if (!id) return NextResponse.json({ message: '缺少图片id' }, { status: 400 });
+  const Image = await getImageModel();
+  const doc = await Image.findByIdAndDelete(id);
+  if (!doc) return NextResponse.json({ message: '图片不存在' }, { status: 404 });
+  return NextResponse.json({ message: '图片已删除', id });
+}
+
+// 仅处理 GET/DELETE，POST 上传由 /images/route.js 处理

@@ -114,3 +114,17 @@
 ---
 
 _本项目由 `create-next-app` 初始化，并针对智库官网的需求进行了规划。_
+
+---
+
+统一图片上传、访问、删除接口说明：
+- 上传：POST /images
+- 访问/下载：GET /images/:id
+- 删除：DELETE /images/:id
+所有图片路径、接口、Markdown 插入均统一为 /images/图片id
+
+历史 /api/upload/images 路径已废弃，请勿再使用。
+
+示例 Markdown 插入：![](/images/图片id)
+
+详情见 src/app/images/route.js 和 src/app/images/[id]/route.js

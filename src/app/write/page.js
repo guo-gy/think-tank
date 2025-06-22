@@ -12,18 +12,10 @@ export default function NewArticlePage() {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [excerpt, setExcerpt] = useState('');
+  const [description, setDescription] = useState(''); // 摘要/描述
   const [partition, setPartition] = useState('NEWS'); // 分区
   const [category, setCategory] = useState(''); // 分类
   const [isPublished, setIsPublished] = useState(false);
-  // 附件即本体模式
-  const [isMainAttachment, setIsMainAttachment] = useState(false);
-  const [mainAttachmentFile, setMainAttachmentFile] = useState(null);
-  const [mainAttachmentPreviewUrl, setMainAttachmentPreviewUrl] = useState(null); // 新增
-  // 新增：图片和附件文件
-  const [imageFile, setImageFile] = useState(null);
-  const [attachmentFile, setAttachmentFile] = useState(null);
-
   // 多图片上传与封面选择
   const [imageFiles, setImageFiles] = useState([]); // 多图片
   const [coverIndex, setCoverIndex] = useState(0); // 封面索引，默认第一个
@@ -37,26 +29,8 @@ export default function NewArticlePage() {
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(true);
 
-
-  // PDF/MD 预览 objectURL 管理（useEffect 必须在顶层调用）
-  useEffect(() => {
-    if (!isMainAttachment || !mainAttachmentFile) {
-      setMainAttachmentPreviewUrl(null);
-      return;
-    }
-    if (mainAttachmentFile.name.endsWith('.md')) {
-      mainAttachmentFile.text().then(text => {
-        setMainAttachmentFile(f => ({ ...f, _previewContent: text }));
-      });
-      setMainAttachmentPreviewUrl(null);
-    } else if (mainAttachmentFile.name.match(/\.(pdf)$/i)) {
-      const url = URL.createObjectURL(mainAttachmentFile);
-      setMainAttachmentPreviewUrl(url);
-      return () => { URL.revokeObjectURL(url); };
-    } else {
-      setMainAttachmentPreviewUrl(null);
-    }
-  }, [isMainAttachment, mainAttachmentFile]);
+  const handleToggleLeft = () => setShowLeft(!showLeft);
+  const handleToggleRight = () => setShowRight(!showRight);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,7 +50,7 @@ export default function NewArticlePage() {
       const formData = new FormData();
       imageFiles.forEach(f => formData.append('images', f));
       try {
-        const uploadRes = await fetch('/api/upload/images', {
+        const uploadRes = await fetch('/images', {
           method: 'POST',
           body: formData,
         });
@@ -111,12 +85,12 @@ export default function NewArticlePage() {
     const articleData = {
       title,
       content,
-      excerpt,
+      description, // 用 description 字段
       partition, // 分区
       category, // 分类
       status: statusValue, // 关键：传递 status 字段
       images: imageUrls,
-      coverImage: coverImageId,
+      coverImage: coverImageId, // 新增：封面字段
       // 可根据后端需求添加附件字段
     };
 
@@ -139,7 +113,7 @@ export default function NewArticlePage() {
         // 清空表单或跳转到文章列表/详情页
         setTitle('');
         setContent('');
-        setExcerpt('');
+        setDescription('');
         // setType('NEWS');
         // setCategory('');
         // setIsPublished(false);
@@ -154,13 +128,6 @@ export default function NewArticlePage() {
     }
   };
 
-  // 处理图片和附件选择
-  const handleImageChange = (e) => {
-    setImageFile(e.target.files[0] || null);
-  };
-  const handleAttachmentChange = (e) => {
-    setAttachmentFile(e.target.files[0] || null);
-  };
   // 处理多图片选择，选择即上传
   const handleImagesChange = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -169,7 +136,7 @@ export default function NewArticlePage() {
     const formData = new FormData();
     files.forEach(f => formData.append('images', f));
     try {
-      const uploadRes = await fetch('/api/upload/images', {
+      const uploadRes = await fetch('/images', {
         method: 'POST',
         body: formData,
       });
@@ -191,16 +158,13 @@ export default function NewArticlePage() {
   // 删除图片
   const handleRemoveImage = async (idx) => {
     const url = imageUrls[idx];
-    // 解析 /images/用户id/图片名
-    const match = url.match(/^\/images\/(.+?)\/(.+)$/);
+    // 解析 /images/图片id
+    const match = url.match(/^\/images\/(.+)$/);
     if (match) {
-      const userId = match[1];
-      const filename = decodeURIComponent(match[2]);
+      const deleteId = match[1];
       try {
-        await fetch('/api/upload/images/delete', {
+        await fetch(`/images/${deleteId}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, filename })
         });
       } catch {}
     }
@@ -217,7 +181,7 @@ export default function NewArticlePage() {
 
   // 在内容区插入图片markdown引用
   const insertImageMarkdown = (file, url) => {
-    // url 为 /images/用户id/图片名
+    // url 为 /images/图片id
     const md = `![](${url})`;
     // 在光标处插入
     const textarea = document.getElementById('content');
@@ -309,12 +273,12 @@ export default function NewArticlePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="excerpt" className="block text-base font-semibold mb-1 text-indigo-900">摘要 (可选)</label>
+                  <label htmlFor="description" className="block text-base font-semibold mb-1 text-indigo-900">描述 (可选)</label>
                   <textarea
-                    id="excerpt"
+                    id="description"
                     rows={3}
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-indigo-50/60 placeholder-gray-400 transition"
                     placeholder="一句话描述文章内容"
                     style={{color: "#222"}}
@@ -349,9 +313,9 @@ export default function NewArticlePage() {
         {/* 中间：内容编辑区自适应宽度 */}
         <div className="flex-1 bg-white/90 rounded-3xl shadow-2xl border border-gray-100 p-10 flex flex-col min-h-0 overflow-y-auto backdrop-blur-xl" style={{maxHeight:'calc(100vh - 120px)', color:'#222', minWidth:0, transition:'all 0.4s cubic-bezier(.4,2,.6,1)'}}>
           <h2 className="text-2xl font-bold mb-6 text-indigo-700 text-center drop-shadow">文章内容</h2>
-          {isMainAttachment && mainAttachmentFile ? (
+          {/* {isMainAttachment && mainAttachmentFile ? (
             <div className="flex-1 min-h-0 w-full h-full bg-white/80 rounded-xl border border-gray-100 p-6 overflow-auto text-gray-700 text-base flex flex-col" style={{minHeight:0, height:'100%', maxHeight:'100%'}}>
-              {/* 附件预览 */}
+              {/!* 附件预览 *!/}
               {(() => {
                 const name = mainAttachmentFile.name.toLowerCase();
                 if (name.endsWith('.md')) {
@@ -387,7 +351,7 @@ export default function NewArticlePage() {
                 }
               })()}
             </div>
-          ) : (
+          ) : ( */}
             <textarea
               id="content"
               rows={22}
@@ -397,11 +361,10 @@ export default function NewArticlePage() {
               className="flex-1 block w-full px-4 py-3 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-indigo-50/60 placeholder-gray-400 transition"
               placeholder="在此输入文章内容..."
               style={{color: "#222", minHeight: 320}}
-              disabled={isMainAttachment}
             ></textarea>
-          )}
+          {/* )} */}
         </div>
-        {/* 右侧：图片和附件卡片 3/10 */}
+        {/* 右侧：图片卡片 3/10 */}
         <div style={{marginRight:24, transition:'all 0.4s cubic-bezier(.4,2,.6,1)', width: showRight ? 340 : 32, minWidth: showRight ? 260 : 32, maxWidth: showRight ? 420 : 32, overflow:'visible', position:'relative', display:'flex', flexDirection:'column', justifyContent:'flex-start', zIndex:2}}>
           <button type="button" onClick={()=>setShowRight(v=>!v)}
             style={{position:'absolute', top:24, left:-20, zIndex:20, width:40, height:40, background:'linear-gradient(135deg,#6366f1 60%,#a5b4fc)', border:'none', borderRadius:'50%', boxShadow:'0 4px 16px #6366f133', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all .2s'}}
@@ -412,21 +375,12 @@ export default function NewArticlePage() {
           </button>
           {showRight && (
             <div className="flex flex-col bg-white/90 rounded-3xl shadow-2xl border border-gray-100 p-10 h-fit min-h-[420px] min-w-[260px] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_8px_32px_#6366f122]" style={{color:'#222', boxShadow:'0 8px 32px #6366f122'}}>
-              {/* 附件即本体勾选 */}
-              <div className="flex items-center mb-4">
-                <input id="isMainAttachment" type="checkbox" className="accent-indigo-500 w-5 h-5" checked={isMainAttachment} onChange={e=>{
-                  setIsMainAttachment(e.target.checked);
-                  if (!e.target.checked) setMainAttachmentFile(null);
-                }} />
-                <label htmlFor="isMainAttachment" className="ml-2 text-base text-indigo-900 font-semibold cursor-pointer">附件即本体</label>
-              </div>
-              <h2 className="text-xl font-bold mb-6 text-indigo-700 text-center drop-shadow">图片与附件</h2>
+              <h2 className="text-xl font-bold mb-6 text-indigo-700 text-center drop-shadow">图片</h2>
               {/* 渐变横线 */}
               <div className="w-full flex items-center mb-6">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-100 to-transparent" style={{opacity:0.7}}></div>
               </div>
               {/* 图片区 */}
-              {!isMainAttachment && (
               <div className="flex flex-col gap-2 mb-6 w-full relative">
                 {/* 添加图片加号按钮 */}
                 {imageFiles.length > 0 && (
@@ -476,80 +430,6 @@ export default function NewArticlePage() {
                     </div>
                   </div>
                   </>
-                )}
-              </div>
-              )}
-              {/* 图片/附件分割横线 */}
-              <div className="w-full flex items-center mb-6">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-100 to-transparent" style={{opacity:0.7}}></div>
-              </div>
-              {/* 附件区 */}
-              <div className="flex flex-col gap-2 w-full relative">
-                {/* 附件即本体模式下只允许一个文件 */}
-                {isMainAttachment ? (
-                  <div className="flex flex-col items-center justify-center h-28 text-gray-400 w-full select-none group">
-                    {mainAttachmentFile ? (
-                      <div className="flex flex-col items-center w-full">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="truncate max-w-[180px] text-indigo-700 text-sm" title={mainAttachmentFile.name}>{mainAttachmentFile.name}</span>
-                          <button type="button" className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 border border-red-200 font-semibold shadow-sm" onClick={()=>setMainAttachmentFile(null)}>移除</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <button type="button" className="px-4 py-2 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 rounded-lg border border-indigo-200 hover:bg-indigo-200 transition font-semibold shadow-sm" onClick={()=>document.getElementById('main-attachment-upload-input')?.click()}>上传本体附件</button>
-                        <input id="main-attachment-upload-input" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.md,.jpg,.jpeg,.png,.gif,.webp,.svg,.zip" style={{display:'none'}} onChange={async e=>{
-                          const file = e.target.files[0];
-                          if (!file) return;
-                          setMainAttachmentFile(file);
-                          // 预览内容由 useEffect 统一处理
-                        }} />
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 w-full relative">
-                    {/* 添加附件加号按钮 */}
-                    {attachmentFile && (Array.isArray(attachmentFile)?attachmentFile.length>0:!!attachmentFile) && (
-                      <button type="button" title="添加附件" onClick={()=>document.getElementById('attachment-upload-input')?.click()} className="absolute top-0 right-0 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 rounded-full p-2 shadow hover:scale-110 hover:bg-indigo-200 transition-all z-10 flex items-center justify-center" style={{width:32, height:32}}>
-                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round"/></svg>
-                      </button>
-                    )}
-                    {(!attachmentFile || (Array.isArray(attachmentFile) && attachmentFile.length === 0)) ? (
-                      <div className="flex flex-col items-center justify-center h-28 text-gray-400 w-full select-none cursor-pointer group" onClick={()=>document.getElementById('attachment-upload-input')?.click()}>
-                        <svg width="32" height="32" fill="none" stroke="#a5b4fc" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="6" y="8" width="12" height="8" rx="2" fill="#eef2ff"/><path d="M8 12h8" stroke="#a5b4fc" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        <div className="mt-1 text-sm group-hover:text-indigo-500 transition">还未添加附件，点击此处添加</div>
-                        <input id="attachment-upload-input" type="file" multiple style={{display:'none'}} onChange={e=>{
-                          const files = Array.from(e.target.files || []);
-                          setAttachmentFile(prev => prev ? [...(Array.isArray(prev)?prev:[prev]), ...files] : files);
-                        }} />
-                      </div>
-                    ) : (
-                      <>
-                      <input id="attachment-upload-input" type="file" multiple style={{display:'none'}} onChange={e=>{
-                        const files = Array.from(e.target.files || []);
-                        setAttachmentFile(prev => prev ? [...(Array.isArray(prev)?prev:[prev]), ...files] : files);
-                      }} />
-                      <div className="flex flex-col gap-2 w-full">
-                        <div className="text-sm text-gray-700 mb-1">附件列表：</div>
-                        <div className="flex flex-wrap gap-2">
-                          {(Array.isArray(attachmentFile)?attachmentFile:[attachmentFile]).map((file, idx) => (
-                            <div key={idx} className="flex items-center bg-indigo-50/60 border border-indigo-100 rounded px-2 py-1 text-xs text-indigo-800 gap-1">
-                              <span className="truncate max-w-[120px]" title={file.name}>{file.name}</span>
-                              <button type="button" className="ml-1 px-1 py-0.5 bg-red-100 text-red-700 rounded hover:bg-red-200 border border-red-200 font-semibold shadow-sm" onClick={()=>{
-                                setAttachmentFile(prev => {
-                                  const arr = Array.isArray(prev)?[...prev]:[prev];
-                                  arr.splice(idx,1);
-                                  return arr.length>0?arr:[];
-                                });
-                              }}>删除</button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      </>
-                    )}
-                  </div>
                 )}
               </div>
             </div>

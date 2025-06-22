@@ -213,7 +213,7 @@ export default function HomePage() {
                           <Link href={`/${item._id || ''}`}>
                             <span className="hover:underline cursor-pointer text-xl font-bold text-white">{item.title || ''}</span>
                           </Link>
-                          <div className="text-sm text-white mt-1">{item.excerpt || item.description || item.content?.slice(0, 40) || ''}</div>
+                          <div className="text-sm text-white mt-1">{item.description || ''}</div>
                         </div>
                       </div>
                     </SwiperSlide>
@@ -252,7 +252,7 @@ export default function HomePage() {
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
@@ -314,7 +314,7 @@ export default function HomePage() {
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
@@ -375,7 +375,7 @@ export default function HomePage() {
                 >
                   <div className="flex-1 flex flex-col justify-center px-5 py-2">
                     <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                    <span className="text-sm text-gray-500 mt-1">{item.description || item.content?.slice(0, 40) || ''}</span>
+                    <span className="text-sm text-gray-500 mt-1">{item.description || '暂无摘要'}</span>
                   </div>
                   {item.cover && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
