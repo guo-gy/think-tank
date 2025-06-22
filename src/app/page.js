@@ -84,7 +84,7 @@ export default function HomePage() {
         <button
           className="absolute left-2 top-1/2 z-30 -translate-y-1/2 bg-white/80 hover:bg-white shadow rounded-full w-10 h-10 flex items-center justify-center"
           style={{ backdropFilter: 'blur(4px)' }}
-          onClick={() => scrollBy(-400)}
+          onClick={() => scrollBy(-window.innerWidth * 0.33)}
           tabIndex={-1}
         >
           <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 19l-7-7 7-7"/></svg>
@@ -92,7 +92,7 @@ export default function HomePage() {
         <button
           className="absolute right-2 top-1/2 z-30 -translate-y-1/2 bg-white/80 hover:bg-white shadow rounded-full w-10 h-10 flex items-center justify-center"
           style={{ backdropFilter: 'blur(4px)' }}
-          onClick={() => scrollBy(400)}
+          onClick={() => scrollBy(window.innerWidth * 0.33)}
           tabIndex={-1}
         >
           <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5l7 7-7 7"/></svg>
