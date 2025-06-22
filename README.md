@@ -39,25 +39,17 @@
 
 1.  **克隆仓库 (如果你是从 Git 克隆的)：**
     ```bash
-    git clone [你的仓库地址]
-    cd [项目目录]
+    git clone https://github.com/guo-gy/think-tank
+    cd think-tank
     ```
 
 2.  **安装依赖：**
     ```bash
     npm install
-    # or
-    # yarn install
-    # or
-    # pnpm install
     ```
 
 3.  **配置环境变量：**
-    *   复制 `.env.example` 文件 (如果提供了) 并重命名为 `.env.local`。
-        ```bash
-        cp .env.example .env.local
-        ```
-    *   或者直接创建 `.env.local` 文件，并根据以下模板填写你的配置信息：
+    *   创建 `.env.local` 文件：
         ```env
         # .env.local
 
