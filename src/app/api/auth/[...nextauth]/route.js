@@ -5,6 +5,28 @@ import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
+const getEnv = (key) => {
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(process.cwd(), '.env.local');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      const lines = envContent.split(/\r?\n/);
+      for (const line of lines) {
+        const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+        if (match && match[1] === key) {
+          return match[2];
+        }
+      }
+    }
+  } catch {}
+  return undefined;
+};
+
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -44,8 +66,8 @@ export const authOptions = {
     // 你可以在这里添加其他 Providers，例如 GitHub, Google 等
     // import GithubProvider from "next-auth/providers/github";
     // GithubProvider({
-    //   clientId: process.env.GITHUB_ID,
-    //   clientSecret: process.env.GITHUB_SECRET,
+    //   clientId: getEnv('GITHUB_ID'),
+    //   clientSecret: getEnv('GITHUB_SECRET'),
     // }),
   ],
   session: {
@@ -80,8 +102,8 @@ export const authOptions = {
     // verifyRequest: '/auth/verify-request', // (e.g. for email verification)
     // newUser: '/auth/new-user' // New users will be directed here on first sign in (leave the property out to disable)
   },
-  secret: process.env.NEXTAUTH_SECRET, // 从 .env.local 读取
-  // debug: process.env.NODE_ENV === 'development', // (可选) 开发模式下开启调试
+  secret: getEnv('NEXTAUTH_SECRET'), // 从本地环境变量或 .env.local 读取
+  // debug: getEnv('NODE_ENV') === 'development', // (可选) 开发模式下开启调试
 };
 
 const handler = NextAuth(authOptions);

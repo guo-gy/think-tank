@@ -1,7 +1,29 @@
 // src/lib/dbConnect.js
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const getEnv = (key) => {
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(process.cwd(), '.env.local');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      const lines = envContent.split(/\r?\n/);
+      for (const line of lines) {
+        const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+        if (match && match[1] === key) {
+          return match[2];
+        }
+      }
+    }
+  } catch {}
+  return undefined;
+};
+
+const MONGODB_URI = getEnv('MONGODB_URI');
 
 if (!MONGODB_URI) {
   throw new Error(

@@ -1,5 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+./.env*
+
+# 本地环境变量文件，切勿提交到 git
+.env.local
+
 # dependencies
 /node_modules
 /.pnp
