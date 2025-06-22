@@ -12,132 +12,107 @@ export default function Hero3D() {
     let height = canvas.height = canvas.offsetHeight;
     let animationId;
 
-    // 3D 球体点阵参数
-    const POINTS = 27; // 适中点数
-    const RADIUS = 90;
-    const SPEED = 0.0032;
-    let theta = 0;
-    let phi = 0;
-    let mouse = { x: 0, y: 0, active: false };
-
+    // 球体参数
+    const POINTS = 38;
+    const RADIUS = Math.min(width, height) * 0.36;
+    const cx = width / 2;
+    const cy = height / 2 + 6;
     // 生成球面点
     const points = Array.from({ length: POINTS }, (_, i) => {
       const t = Math.acos(1 - 2 * (i + 0.5) / POINTS);
       const p = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
       return {
-        x: RADIUS * Math.sin(t) * Math.cos(p),
-        y: RADIUS * Math.sin(t) * Math.sin(p),
-        z: RADIUS * Math.cos(t),
-        base: null,
+        base: {
+          x: Math.sin(t) * Math.cos(p),
+          y: Math.sin(t) * Math.sin(p),
+          z: Math.cos(t)
+        },
+        x: 0, y: 0, z: 0,
         dx: 0, dy: 0, dz: 0,
-        color: `hsl(${220 + 80 * Math.random()}, 80%, 60%)`, // 随机炫彩
+        color: `hsl(${200 + 80 * Math.random()}, 80%, 65%)`
       };
     });
-    points.forEach(pt => pt.base = { x: pt.x, y: pt.y, z: pt.z });
+    let mouse = { x: -1000, y: -1000, active: false };
 
-    let scaleTick = 0;
+    function project(pt) {
+      const scale = RADIUS * 0.98;
+      return {
+        x: cx + (pt.x + pt.dx) * scale,
+        y: cy + (pt.y + pt.dy) * scale,
+        z: pt.z + pt.dz
+      };
+    }
+
     function draw() {
       ctx.clearRect(0, 0, width, height);
-      theta += SPEED;
-      phi += SPEED * 0.7;
-      scaleTick += SPEED * 0.7;
-      // 呼吸缩放
-      const scaleBase = 1.08 + 0.18 * Math.sin(scaleTick);
-      // 点扰动
+      const now = Date.now() / 1000;
+      // 球体自转
+      const theta = now * 0.7;
+      const phi = now * 0.45;
+      // 计算所有点旋转后坐标+扰动
       for (const pt of points) {
-        pt.dx += (0 - pt.dx) * 0.07;
-        pt.dy += (0 - pt.dy) * 0.07;
-        pt.dz += (0 - pt.dz) * 0.07;
-        // 鼠标高亮反馈
-        if (mouse.active) {
-          let x0 = pt.base.x, y0 = pt.base.y, z0 = pt.base.z;
-          let x = x0 * Math.cos(theta) - z0 * Math.sin(theta);
-          let z = x0 * Math.sin(theta) + z0 * Math.cos(theta);
-          let y = y0 * Math.cos(phi) - z * Math.sin(phi);
-          z = y0 * Math.sin(phi) + z * Math.cos(phi);
-          const scale = 1.2 + z / (RADIUS * 2);
-          const px = width / 2 + x * scale * scaleBase;
-          const py = height / 2 + y * scale * scaleBase;
-          const dist = Math.hypot(mouse.x - px, mouse.y - py);
-          if (dist < 90) {
-            const angle = Math.atan2(py - mouse.y, px - mouse.x);
-            const force = (90 - dist) / 90 * 2.2;
-            pt.dx += Math.cos(angle) * force;
-            pt.dy += Math.sin(angle) * force;
-            pt.dz += (Math.random() - 0.5) * force * 0.08;
-          }
+        let { x, y, z } = pt.base;
+        // 旋转
+        let x1 = x * Math.cos(theta) - z * Math.sin(theta);
+        let z1 = x * Math.sin(theta) + z * Math.cos(theta);
+        let y1 = y * Math.cos(phi) - z1 * Math.sin(phi);
+        z1 = y * Math.sin(phi) + z1 * Math.cos(phi);
+        pt.x = x1;
+        pt.y = y1;
+        pt.z = z1;
+        // 鼠标排斥
+        const proj = project(pt);
+        const dist = Math.hypot(mouse.x - proj.x, mouse.y - proj.y);
+        if (dist < 60) {
+          const angle = Math.atan2(proj.y - mouse.y, proj.x - mouse.x);
+          const force = (60 - dist) / 60 * 0.18;
+          pt.dx += Math.cos(angle) * force;
+          pt.dy += Math.sin(angle) * force;
+          pt.dz += (Math.random() - 0.5) * force * 0.12;
         }
-        // 轻微漂浮扰动
-        pt.dx += Math.sin(scaleTick + pt.base.x) * 0.04;
-        pt.dy += Math.cos(scaleTick + pt.base.y) * 0.04;
+        // 回归原位
+        pt.dx += (0 - pt.dx) * 0.12;
+        pt.dy += (0 - pt.dy) * 0.12;
+        pt.dz += (0 - pt.dz) * 0.12;
       }
-      // 绘制所有点和连线
+      // 画连线
       for (let i = 0; i < points.length; i++) {
-        const pt = points[i];
-        let x = (pt.base.x + pt.dx) * Math.cos(theta) - (pt.base.z + pt.dz) * Math.sin(theta);
-        let z = (pt.base.x + pt.dx) * Math.sin(theta) + (pt.base.z + pt.dz) * Math.cos(theta);
-        let y = (pt.base.y + pt.dy) * Math.cos(phi) - z * Math.sin(phi);
-        z = (pt.base.y + pt.dy) * Math.sin(phi) + z * Math.cos(phi);
-        const scale = (1.2 + z / (RADIUS * 2)) * scaleBase;
-        const px = width / 2 + x * scale;
-        const py = height / 2 + y * scale;
-        // 连线：与距离较近的点连线
         for (let j = i + 1; j < points.length; j++) {
-          const pt2 = points[j];
-          let x2 = (pt2.base.x + pt2.dx) * Math.cos(theta) - (pt2.base.z + pt2.dz) * Math.sin(theta);
-          let z2 = (pt2.base.x + pt2.dx) * Math.sin(theta) + (pt2.base.z + pt2.dz) * Math.cos(theta);
-          let y2 = (pt2.base.y + pt2.dy) * Math.cos(phi) - z2 * Math.sin(phi);
-          z2 = (pt2.base.y + pt2.dy) * Math.sin(phi) + z2 * Math.cos(phi);
-          const scale2 = (1.2 + z2 / (RADIUS * 2)) * scaleBase;
-          const px2 = width / 2 + x2 * scale2;
-          const py2 = height / 2 + y2 * scale2;
-          const d = Math.hypot(px - px2, py - py2);
-          const zAvg = (z + z2) / 2;
-          // 线的宽度和渐变
-          let widthLine = 2.5 + 4.5 * ((zAvg / RADIUS + 1) / 2) * (1 - d / 120);
-          if (d < 120) {
+          const a = points[i], b = points[j];
+          const d = Math.hypot(a.x + a.dx - b.x - b.dx, a.y + a.dy - b.y - b.dy, a.z + a.dz - b.z - b.dz);
+          if (d < 0.7) {
+            const pa = project(a), pb = project(b);
             ctx.save();
-            ctx.globalAlpha = 0.7 - d / 180 + 0.2 * ((zAvg / RADIUS + 1) / 2);
-            const grad = ctx.createLinearGradient(px, py, px2, py2);
-            grad.addColorStop(0, pt.color);
-            grad.addColorStop(1, pt2.color);
-            ctx.strokeStyle = grad;
-            ctx.shadowColor = pt.color;
-            ctx.shadowBlur = 8 + 12 * ((zAvg / RADIUS + 1) / 2);
-            ctx.lineWidth = widthLine;
             ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(px2, py2);
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
+            // 背面线更淡
+            const alpha = 0.18 + 0.18 * (pa.z + pb.z) / 2;
+            ctx.strokeStyle = `rgba(99,102,241,${pa.z > 0 && pb.z > 0 ? alpha : alpha * 0.3})`;
+            ctx.lineWidth = pa.z > 0 && pb.z > 0 ? 1.5 : 0.8;
+            ctx.shadowColor = pa.z > 0 && pb.z > 0 ? '#a5b4fc' : 'transparent';
+            ctx.shadowBlur = pa.z > 0 && pb.z > 0 ? 6 : 0;
             ctx.stroke();
             ctx.restore();
           }
         }
-        // 绘制点
+      }
+      // 画点
+      for (const pt of points) {
+        const { x, y, z } = project(pt);
         ctx.save();
-        let pointAlpha = 0.85 + 0.15 * (z / RADIUS);
-        ctx.globalAlpha = pointAlpha;
         ctx.beginPath();
-        let r = 3.2 + 2.8 * scale * (0.7 + 0.3 * (z / RADIUS));
-        ctx.arc(px, py, r, 0, 2 * Math.PI);
-        const grad = ctx.createRadialGradient(px, py, 0, px, py, r * 2.2);
-        grad.addColorStop(0, pt.color);
-        grad.addColorStop(0.5, '#fff');
-        grad.addColorStop(1, 'rgba(99,102,241,0)');
-        ctx.fillStyle = grad;
-        ctx.shadowColor = pt.color;
-        ctx.shadowBlur = 18 * scale * (0.7 + 0.6 * (z / RADIUS));
+        ctx.arc(x, y, z > 0 ? 4.2 : 2.7, 0, 2 * Math.PI);
+        ctx.globalAlpha = z > 0 ? 0.88 : 0.32;
+        ctx.fillStyle = pt.color;
+        ctx.shadowColor = z > 0 ? pt.color : 'transparent';
+        ctx.shadowBlur = z > 0 ? 10 : 0;
         ctx.fill();
         ctx.restore();
       }
       animationId = requestAnimationFrame(draw);
     }
     draw();
-    // 响应式
-    function handleResize() {
-      width = canvas.width = canvas.offsetWidth;
-      height = canvas.height = canvas.offsetHeight;
-    }
-    window.addEventListener('resize', handleResize);
     // 鼠标事件
     function handleMouseMove(e) {
       const rect = canvas.getBoundingClientRect();
@@ -146,10 +121,18 @@ export default function Hero3D() {
       mouse.active = true;
     }
     function handleMouseLeave() {
+      mouse.x = -1000;
+      mouse.y = -1000;
       mouse.active = false;
     }
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
+    // 响应式
+    function handleResize() {
+      width = canvas.width = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', handleResize);
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
@@ -159,7 +142,7 @@ export default function Hero3D() {
   }, []);
 
   return (
-    <div style={{width:'100%', height:300, position:'relative', overflow:'visible', display:'flex', justifyContent:'center', alignItems:'flex-start', marginTop: '-32px'}}>
+    <div style={{width:'100%', height:300, position:'relative', overflow:'visible', display:'flex', justifyContent:'center', alignItems:'flex-start', marginTop: '-24px'}}>
       <div style={{width:'98%', height:'100%', position:'relative', background:'transparent', overflow:'visible', display:'flex', justifyContent:'center', alignItems:'center'}}>
         <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block', overflow:'visible'}}/>
       </div>

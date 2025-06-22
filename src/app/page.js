@@ -50,7 +50,7 @@ export default function HomePage() {
 
   const scrollRef = useRef(null);
 
-  // 仅保留鼠标滚轮横向滚动
+  // 仅保留鼠标滚轮横向滚动，且全局可用（包括轮播图区域）
   React.useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -58,62 +58,15 @@ export default function HomePage() {
     el._hasWheelScroll = true;
 
     const onWheel = (e) => {
-      // 如果事件来自轮播图（Swiper），则不滚动主页面
-      if (
-        e.target.closest('.swiper') ||
-        e.target.classList.contains('swiper') ||
-        e.target.closest('.swiper-container')
-      ) {
-        return;
-      }
+      // 只要纵向滚轮，全部转为横向滚动
       if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
         el.scrollLeft += e.deltaY;
         e.preventDefault();
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
-
-    // 鼠标拖动横向滚动
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-
-    const onPointerDown = (e) => {
-      // 只允许鼠标左键
-      if (e.button !== 0) return;
-      // 如果事件来自轮播图（Swiper），则不拖动主页面
-      if (
-        e.target.closest('.swiper') ||
-        e.target.classList.contains('swiper') ||
-        e.target.closest('.swiper-container')
-      ) {
-        return;
-      }
-      isDown = true;
-      el.classList.add('cursor-grabbing');
-      startX = e.pageX || e.touches?.[0]?.pageX;
-      scrollLeft = el.scrollLeft;
-    };
-    const onPointerMove = (e) => {
-      if (!isDown) return;
-      const x = e.pageX || e.touches?.[0]?.pageX;
-      const walk = x - startX;
-      el.scrollLeft = scrollLeft - walk;
-    };
-    const onPointerUp = () => {
-      isDown = false;
-      el.classList.remove('cursor-grabbing');
-    };
-
-    el.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
     return () => {
       el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
     };
   }, []);
 
@@ -146,7 +99,7 @@ export default function HomePage() {
         </button>
         <div
           ref={scrollRef}
-          className="flex flex-row h-[calc(100vh-96px)] gap-12 px-8 pb-8 overflow-x-auto select-none scrollbar-hide cursor-grab"
+          className="flex flex-row h-[calc(100vh-96px)] gap-12 px-8 pb-8 overflow-x-auto select-none scrollbar-hide"
           style={{
             userSelect: "none",
             scrollbarWidth: "none",
