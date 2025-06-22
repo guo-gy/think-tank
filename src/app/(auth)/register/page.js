@@ -83,7 +83,7 @@ export default function RegisterPage() {
             </svg>
           </div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900 mb-2">注册新账号</h2>
-          <p className="text-center text-gray-500 mb-6">欢迎加入智库官网</p>
+          <p className="text-center text-gray-500 mb-6">欢迎加入山东大学软件学院智库</p>
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <input

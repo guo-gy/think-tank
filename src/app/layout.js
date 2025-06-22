@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import SessionWrapper from '@/components/SessionWrapper/SessionWrapper';
 export const metadata = {
-  title: '智库官网',
+  title: '山东大学软件学院智库',
   description: '分享知识与资讯',
 };
 

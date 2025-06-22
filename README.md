@@ -1,6 +1,6 @@
-# 智库官网 (Think Tank Hub)
+# 山东大学软件学院智库 (Think Tank Hub)
 
-这是一个使用 [Next.js](https://nextjs.org/) (JavaScript 版本) 构建的智库官网项目，旨在提供资讯发布、知识库管理、用户登录与评论等功能。项目采用前后端不分离的架构，后端 API 通过 Next.js API Routes 实现。
+这是一个使用 [Next.js](https://nextjs.org/) (JavaScript 版本) 构建的山东大学软件学院智库项目，旨在提供资讯发布、知识库管理、用户登录与评论等功能。项目采用前后端不分离的架构，后端 API 通过 Next.js API Routes 实现。
 
 ## 项目概述
 
@@ -105,7 +105,7 @@
 
 ---
 
-_本项目由 `create-next-app` 初始化，并针对智库官网的需求进行了规划。_
+_本项目由 `create-next-app` 初始化，并针对山东大学软件学院智库的需求进行了规划。_
 
 ---
 

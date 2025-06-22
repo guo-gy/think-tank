@@ -84,7 +84,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-800">欢迎登录</h1>
-          <p className="text-center text-gray-500 mb-8">智库官网账号登录</p>
+          <p className="text-center text-gray-500 mb-8">山东大学软件学院智库账号登录</p>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <input
