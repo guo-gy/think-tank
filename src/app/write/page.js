@@ -407,6 +407,8 @@ export default function NewArticlePage({articleId ,placeholder=""}) {
                         <>
                         <option value="XUEKEFENXIANG">学科分享</option>
                         <option value="JISHUFENXIANG">技术分享</option>
+                        <option value="JINGYANFENXIANG">经验分享</option>
+                        <option value="QITA">其它</option>
                       </>
                       )}
                       </>
