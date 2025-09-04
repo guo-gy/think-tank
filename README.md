@@ -2,6 +2,11 @@
 
 这是一个使用 [Next.js](https://nextjs.org/) (JavaScript 版本) 构建的山东大学软件学院智库项目，旨在提供资讯发布、知识库管理、用户登录与评论等功能。项目采用前后端不分离的架构，后端 API 通过 Next.js API Routes 实现。
 
+## Todo
+
+* bug:      文章审核显示
+* feature:  文章修改和删除
+
 ## 项目概述
 
 本项目旨在创建一个现代化的智库平台，主要功能包括：
@@ -20,7 +25,6 @@
 *   **数据库：** [MongoDB](https://www.mongodb.com/) (通过 [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 云服务托管)
 *   **ODM (Object Document Mapper)：** [Mongoose](https://mongoosejs.com/)
 *   **用户认证：** [NextAuth.js](https://next-auth.js.org/)
-*   **富文本编辑器：** [React-Quill](https://github.com/zenoamaro/react-quill) / [Tiptap](https://tiptap.dev/) (待定或根据实际选择填写)
 *   **状态管理：** React Context API (按需使用)
 *   **部署平台：** [Vercel](https://vercel.com/)
 
