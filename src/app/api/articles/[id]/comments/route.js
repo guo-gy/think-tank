@@ -41,10 +41,10 @@ export async function POST(req, { params }) {
   return NextResponse.json({ comment });
 }
 
-删除评论
+// 删除评论
 export async function DELETE(req, { params }) {
   await dbConnect();
-  const { id: articleId } = params;
+  const { id: articleId } =await params;
   
   // 获取URL查询参数中的commentId
   const searchParams = req.nextUrl.searchParams;
