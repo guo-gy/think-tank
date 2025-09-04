@@ -133,14 +133,14 @@ export default function NoticesPage() {
           {/* 右侧通知列表 */}
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">通知列表</h2>
-            <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
+            <div className="flex flex-col  flex-1 overflow-y-auto">
               {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
               {error && <div className="text-red-400 text-center py-10">{error}</div>}
               {!loading && !error && pagedNotices.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类通知</div>
               )}
               {pagedNotices.map(item => (
-                <div key={item._id} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+                <Link key={item._id}  href={`/${item._id}`} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
                   <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
@@ -177,7 +177,7 @@ export default function NoticesPage() {
                       >审核拒绝</button>
                     </div>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
             {/* 分页器 */}

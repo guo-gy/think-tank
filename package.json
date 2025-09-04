@@ -13,6 +13,7 @@
     "geist": "^1.4.2",
     "github-markdown-css": "^5.8.1",
     "marked": "^15.0.12",
+    "mongodb": "^6.18.0",
     "mongoose": "^8.16.0",
     "next": "15.3.4",
     "next-auth": "^4.24.11",

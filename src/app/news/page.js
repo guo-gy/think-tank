@@ -1,3 +1,4 @@
+//该页面废弃
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -104,7 +105,7 @@ export default function NewsPage() {
           {/* 右侧新闻列表 */}
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">新闻列表</h2>
-            <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
+            <div className="flex flex-col  flex-1 overflow-y-auto">
               {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
               {error && <div className="text-red-400 text-center py-10">{error}</div>}
               {!loading && !error && pagedNews.length === 0 && (

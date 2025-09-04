@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
   await dbConnect();
   const { id } = await params;
   try {
-    const article = await Article.findById(id).populate('author', 'username');
+    const article = await Article.findById(id).populate('author', 'username email');
     if (!article) {
       return NextResponse.json({ message: '未找到文章' }, { status: 404 });
     }

@@ -8,6 +8,35 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Toaster, toast } from 'react-hot-toast';
 
+// 可以在这里配置全局的toast样式和行为
+const toastOptions = {
+  duration: 3000, // 提示显示时间3秒
+  position: 'top-center' , // 提示位置
+  // 可以添加自定义样式
+  style: {
+    backgroundColor: '#fff',
+    color: '#333',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
+    padding: '12px 20px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    marginTop: '55px', 
+  },
+  error: {
+    style: {
+      backgroundColor: '#fee2e2',
+      color: '#dc2626',
+      borderColor: '#fecaca',
+    },
+  },
+  success: {
+    style: {
+      backgroundColor: '#dcfce7',
+      color: '#166534',
+      borderColor: '#bbf7d0',
+    },
+  },
+};
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +46,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error('请输入邮箱和密码', toastOptions);
+      return;
+    }
     setLoading(true);
     try {
       const result = await signIn('credentials', {
@@ -24,15 +57,23 @@ export default function LoginPage() {
         email,
         password,
       });
+      console.log('signIn result:', result);
       if (result?.ok) {
-        toast.success('登录成功！');
-        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/';
-        router.push(callbackUrl);
-      } else if (result?.error) {
-        toast.error('邮箱或密码错误');
+          const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/';
+          router.push(callbackUrl);
+      } else {
+        const errorMessage = result?.error || '邮箱或密码错误';
+        toast.error(errorMessage, {
+          ...toastOptions,
+          error: toastOptions.error,
+        });
       }
     } catch (err) {
-      toast.error('发生意外错误，请联系管理员。');
+      console.error('登录错误:', err);
+      toast.error('发生意外错误，请联系管理员。', {
+        ...toastOptions,
+        error: toastOptions.error,
+      });
     } finally {
       setLoading(false);
     }
@@ -58,8 +99,9 @@ export default function LoginPage() {
       <Toaster position="top-center" reverseOrder={false} />
       {/* 左侧图片 6/10 */}
       <div className="hidden md:block md:w-3/5 w-0 h-full relative">
+        {/* 在大多数前端框架（如 React、Vue）中，public目录是根目录，正确的路径应该去掉public，直接写成/images/3.jpg */}
         <img
-          src="/api/images/3.jpg"
+          src="images/3.jpg"
           alt="登录配图"
           className="object-left object-cover w-full h-full"
         />

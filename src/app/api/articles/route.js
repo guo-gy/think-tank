@@ -33,8 +33,8 @@ export async function POST(request) {
       coverImage,
       attachments = [], 
       status = 'PRIVATE',
-      partition, // 分区，四个固定
-      category, // 分类，自定义
+      partition, // 分区，
+      category, // 分类，
       subCategory,
     } = body;
 
@@ -42,7 +42,7 @@ export async function POST(request) {
     if (!title || !content || !partition) {
       return NextResponse.json({ message: '标题、内容、分区不能为空' }, { status: 400 });
     }
-    if (!['NEWS', 'NOTICE', 'DOWNLOAD', 'LECTURE'].includes(partition)) {
+    if (!['SQUARE', 'NOTICE', 'DOWNLOAD'].includes(partition)) {
       return NextResponse.json({ message: '分区不合法' }, { status: 400 });
     }
     if (!['PRIVATE', 'PENDING', 'PUBLIC'].includes(status)) {
@@ -88,6 +88,7 @@ export async function GET(request) {
     const status = searchParams.get('status') || 'PUBLIC';
     const partition = searchParams.get('partition');
     const category = searchParams.get('category');
+    const author = searchParams.get('author');
     const filter = {};
     if (status.includes(',')) {
       filter.status = { $in: status.split(',') };
@@ -96,6 +97,7 @@ export async function GET(request) {
     }
     if (partition) filter.partition = partition;
     if (category) filter.category = category;
+    if (author) filter.author = author; // 关联作者ID筛选
     const articles = await Article.find(filter)
       .sort({ createdAt: -1 })
       .populate('author', 'username');

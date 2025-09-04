@@ -10,10 +10,10 @@ import { usePathname } from 'next/navigation';
 // 主题色映射，直接用十六进制或 rgb
 const navTheme = {
   '/': { from: '#6366f1', to: '#a5b4fc' },      // indigo
-  '/news': { from: '#ef4444', to: '#fca5a5' },  // red
+  // '/notices': { from: '#ef4444', to: '#fca5a5' },  // red
   '/notices': { from: '#3b82f6', to: '#93c5fd' }, // blue
   '/downloads': { from: '#22c55e', to: '#86efac' }, // green
-  '/lectures': { from: '#facc15', to: '#fde68a' }, // yellow
+  '/square': { from: '#facc15', to: '#fde68a' }, // yellow
 };
 
 // 液态球NavLink
@@ -210,10 +210,9 @@ export default function Navbar() {
           {/* 右侧主导航栏 */}
           <div className="flex items-center space-x-2 ml-6">
             <NavLink href="/">首页</NavLink>
-            <NavLink href="/news">新闻</NavLink>
             <NavLink href="/notices">通知</NavLink>
             <NavLink href="/downloads">资料</NavLink>
-            <NavLink href="/lectures">助学</NavLink>
+            <NavLink href="/square">广场</NavLink>
 
             {/* 登录/用户等功能区，保持原有逻辑 */}
             {status === "loading" && <span className="text-sm text-gray-500">校验中...</span>}

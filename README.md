@@ -54,7 +54,7 @@
         # .env.local
 
         # MongoDB 连接字符串 (从 MongoDB Atlas 获取)
-        MONGODB_URI="mongodb+srv://<username>:<password>@yourcluster.mongodb.net/<dbname>?retryWrites=true&w=majority"
+        MONGODB_URI="mongodb+srv://<username>:<password>@yourcluster.mongodb.net/thinktank_db?retryWrites=true&w=majority"
 
         # NextAuth.js 配置
         NEXTAUTH_URL="http://localhost:3000" # 开发环境 URL

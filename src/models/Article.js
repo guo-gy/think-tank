@@ -37,7 +37,7 @@ const ArticleSchema = new mongoose.Schema({
     },
     partition: {
         type: String,
-        enum: ['NEWS', 'NOTICE', 'DOWNLOAD', 'LECTURE'],
+        enum: ['SQUARE', 'NOTICE', 'DOWNLOAD'],
         required: true,
     },
     category: {

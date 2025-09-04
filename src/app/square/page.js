@@ -1,3 +1,4 @@
+//助学
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -6,11 +7,11 @@ import { useSession } from "next-auth/react";
 
 const PAGE_SIZE = 5;
 
-export default function LecturesPage() {
+export default function SquarePage() {
   const { data: session } = useSession();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
-  const [lectureList, setLectureList] = useState([]);
+  const [squareList, setSquareList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,13 +23,13 @@ export default function LecturesPage() {
     setError("");
     // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
     const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
-    fetch(`/api/articles?partition=LECTURE&status=${statusParam}`)
+    fetch(`/api/articles?partition=SQUARE&status=${statusParam}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text());
         return res.json();
       })
       .then((data) => {
-        setLectureList(data.data || []);
+        setSquareList(data.data || []);
       })
       .catch((err) => {
         setError("讲义加载失败");
@@ -40,7 +41,7 @@ export default function LecturesPage() {
   // 动态提取所有分类
   const categories = useMemo(() => {
     const set = new Set();
-    lectureList.forEach(item => {
+    squareList.forEach(item => {
       if (item.category) set.add(item.category);
     });
     let arr = [
@@ -50,21 +51,21 @@ export default function LecturesPage() {
     // 管理员加“审核中”
     if (isAdmin) arr.push({ id: "pending", name: "审核中" });
     return arr;
-  }, [lectureList, isAdmin]);
+  }, [squareList, isAdmin]);
 
   // 分类过滤
-  let filteredLectures = lectureList;
+  let filteredSquare = squareList;
   if (selectedCategory === "pending") {
-    filteredLectures = lectureList.filter(n => n.status === "PENDING");
+    filteredSquare = squareList.filter(n => n.status === "PENDING");
   } else if (selectedCategory !== "all") {
-    filteredLectures = lectureList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
+    filteredSquare = squareList.filter(n => n.category === selectedCategory && n.status === "PUBLIC");
   } else {
-    filteredLectures = lectureList.filter(n => n.status === "PUBLIC");
+    filteredSquare = squareList.filter(n => n.status === "PUBLIC");
   }
 
   // 分页
-  const totalPages = Math.max(1, Math.ceil(filteredLectures.length / PAGE_SIZE));
-  const pagedLectures = filteredLectures.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredSquare.length / PAGE_SIZE));
+  const pagedSquare = filteredSquare.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // 切换分类时回到第一页
   function handleCategoryChange(catId) {
@@ -79,7 +80,7 @@ export default function LecturesPage() {
       const data = await res.json();
       if (res.ok) {
         toast.success('审核通过！');
-        setLectureList(list => list.map(a => a._id === id ? { ...a, status: 'PUBLIC' } : a));
+        setSquareList(list => list.map(a => a._id === id ? { ...a, status: 'PUBLIC' } : a));
       } else {
         toast.error(data.message || '审核失败');
       }
@@ -94,7 +95,7 @@ export default function LecturesPage() {
       const data = await res.json();
       if (res.ok) {
         toast.success('已拒绝！');
-        setLectureList(list => list.map(a => a._id === id ? { ...a, status: 'PRIVATE' } : a));
+        setSquareList(list => list.map(a => a._id === id ? { ...a, status: 'PRIVATE' } : a));
       } else {
         toast.error(data.message || '操作失败');
       }
@@ -133,14 +134,14 @@ export default function LecturesPage() {
           {/* 右侧讲义列表 */}
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
             <h2 className="text-xl font-bold mb-4 text-gray-800">讲义列表</h2>
-            <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
+            <div className="flex flex-col  flex-1 overflow-y-auto">
               {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
               {error && <div className="text-red-400 text-center py-10">{error}</div>}
-              {!loading && !error && pagedLectures.length === 0 && (
+              {!loading && !error && pagedSquare.length === 0 && (
                 <div className="text-gray-400 text-center py-10">暂无该分类讲义</div>
               )}
-              {pagedLectures.map(item => (
-                <div key={item._id} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+              {pagedSquare.map(item => (
+                <Link key={item._id} href={`/${item._id}`} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
                   <div className="flex flex-row h-24 relative">
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
@@ -177,7 +178,7 @@ export default function LecturesPage() {
                       >审核拒绝</button>
                     </div>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
             {/* 分页器 */}
