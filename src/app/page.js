@@ -381,8 +381,12 @@ export default function HomePage() {
                       {item.title}
                     </span>
                     <span className="text-sm text-gray-500 mt-1">
-                      {item.description || "暂无摘要"}
-                    </span>
+                        {item.description
+                          ? item.description.length > 40
+                            ? `${item.description.substring(0, 40)}...`
+                            : item.description
+                          : "暂无摘要"}
+                      </span>
                   </div>
                   {item.coverImage && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
@@ -464,8 +468,12 @@ export default function HomePage() {
                       {item.title}
                     </span>
                     <span className="text-sm text-gray-500 mt-1">
-                      {item.description || "暂无摘要"}
-                    </span>
+                        {item.description
+                          ? item.description.length > 40
+                            ? `${item.description.substring(0, 40)}...`
+                            : item.description
+                          : "暂无摘要"}
+                      </span>
                   </div>
                   {item.coverImage && (
                     <div className="relative w-1/2 h-full min-w-[4rem]">
