@@ -32,8 +32,8 @@ export default function SquarePage() {
         setSquareList(data.data || []);
       })
       .catch((err) => {
-        setError("讲义加载失败");
-        toast.error("讲义加载失败");
+        setError("文章加载失败");
+        toast.error("文章加载失败");
       })
       .finally(() => setLoading(false));
   }, [isAdmin]);
@@ -114,7 +114,7 @@ export default function SquarePage() {
         <div className="grid grid-cols-1 md:grid-cols-10 gap-8 w-full h-full">
           {/* 左侧分类 */}
           <aside className="md:col-span-3 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">讲义分类</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">文章分类</h2>
             <ul className="space-y-2">
               {categories.map(cat => (
                 <li key={cat.id}>
@@ -133,12 +133,12 @@ export default function SquarePage() {
           </aside>
           {/* 右侧讲义列表 */}
           <main className="md:col-span-7 col-span-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col h-full">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">讲义列表</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">文章列表</h2>
             <div className="flex flex-col  flex-1 overflow-y-auto">
               {loading && <div className="text-gray-400 text-center py-10">加载中...</div>}
               {error && <div className="text-red-400 text-center py-10">{error}</div>}
               {!loading && !error && pagedSquare.length === 0 && (
-                <div className="text-gray-400 text-center py-10">暂无该分类讲义</div>
+                <div className="text-gray-400 text-center py-10">暂无该分类文章</div>
               )}
               {pagedSquare.map(item => (
                 <Link key={item._id} href={`/${item._id}`} className="block rounded-xl border border-gray-100 p-0 bg-white group overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
@@ -146,7 +146,13 @@ export default function SquarePage() {
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
                       <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{item.description || ''}</span>
+                      <span className="text-sm text-gray-500 mt-1">
+                        {item.description
+                          ? item.description.length > 40
+                            ? `${item.description.substring(0, 40)}...`
+                            : item.description
+                          : ""}
+                      </span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
                     {item.coverImage && (

@@ -365,9 +365,9 @@ export default function NewArticlePage({articleId ,placeholder=""}) {
                     {session?.user?.role === "ADMIN" ||
                     session?.user?.role === "SUPER_ADMIN" ? (
                       <>
-                        <option value="NOTICE">通知</option>
-                        <option value="DOWNLOAD">资料</option>
-                        <option value="SQUARE">广场</option>
+                        <option value="NOTICE" onChange={() => setCategory("日常推文")}>通知</option>
+                        <option value="DOWNLOAD" onChange={() => setCategory("朋辈讲义")}>资料</option>
+                        <option value="SQUARE" onChange={() => setCategory("学科分享")}>广场</option>
                       </>
                     ) : (
                       <>
@@ -392,9 +392,9 @@ export default function NewArticlePage({articleId ,placeholder=""}) {
                   >{/* 新闻中放日常推文,没有分类，资料中放朋辈讲义，知识见解，科研分享，广场中放平时大家的一些分享*/}
                     {partition === "DOWNLOAD"  ? (
                       <>
-                        <option value="PENGBEIJIANGYI">朋辈讲义</option>
-                        <option value="ZHISHIJIANJIE">知识见解</option>
-                        <option value="KEYANFENXIANG">科研分享</option>
+                        <option value="朋辈讲义">朋辈讲义</option>
+                        <option value="知识见解" >知识见解</option>
+                        <option value="科研分享" >科研分享</option>
                       </>
                     ) : (
                       //这里套了一个三元表达式
@@ -405,10 +405,10 @@ export default function NewArticlePage({articleId ,placeholder=""}) {
                       </>
                       ):(
                         <>
-                        <option value="XUEKEFENXIANG">学科分享</option>
-                        <option value="JISHUFENXIANG">技术分享</option>
-                        <option value="JINGYANFENXIANG">经验分享</option>
-                        <option value="QITA">其它</option>
+                        <option value="学科分享">学科分享</option>
+                        <option value="技术分享">技术分享</option>
+                        <option value="经验分享">经验分享</option>
+                        <option value="其它">其它</option>
                       </>
                       )}
                       </>

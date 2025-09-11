@@ -153,11 +153,11 @@ export default function ProfilePage() {
                         <span className="text-sm text-gray-700 mt-1">
                           状态：{article.status}
                         </span>
-                        {article.description && (
+                        {/* {article.description && (
                           <span className="text-sm text-gray-500 mt-1">
                             {article.description}
                           </span>
-                        )}
+                        )} */}
                       </div>
                       {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
                       {article.coverImage && (

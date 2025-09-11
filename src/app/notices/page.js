@@ -145,7 +145,13 @@ export default function NoticesPage() {
                     {/* 左侧：标题和描述 */}
                     <div className="flex-1 flex flex-col justify-center px-5 py-3 z-20 relative">
                       <span className="text-base font-semibold text-gray-800">{item.title}</span>
-                      <span className="text-sm text-gray-500 mt-1">{item.description || ''}</span>
+                      <span className="text-sm text-gray-500 mt-1">
+                        {item.description
+                          ? item.description.length > 40
+                            ? `${item.description.substring(0, 40)}...`
+                            : item.description
+                          : ""}
+                      </span>
                     </div>
                     {/* 右侧：配图+渐变，仅在图片区域内渐变 */}
                     {item.coverImage && (
