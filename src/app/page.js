@@ -382,8 +382,8 @@ export default function HomePage() {
                     </span>
                     <span className="text-sm text-gray-500 mt-1">
                         {item.description
-                          ? item.description.length > 40
-                            ? `${item.description.substring(0, 40)}...`
+                          ? item.description.length > 16
+                            ? `${item.description.substring(0, 16)}...`
                             : item.description
                           : "暂无摘要"}
                       </span>
@@ -469,8 +469,8 @@ export default function HomePage() {
                     </span>
                     <span className="text-sm text-gray-500 mt-1">
                         {item.description
-                          ? item.description.length > 40
-                            ? `${item.description.substring(0, 40)}...`
+                          ? item.description.length > 16
+                            ? `${item.description.substring(0, 16)}...`
                             : item.description
                           : "暂无摘要"}
                       </span>
