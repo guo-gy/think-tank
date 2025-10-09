@@ -12,7 +12,7 @@ export async function GET(req, { params }) {
   const article = await Article.findById(id).populate({
     path: 'commentIds',
     populate: { path: 'author', select: 'username email' },
-    options: { sort: { createdAt: -1 } }
+    options: { sort: { createdAt: -1 } },
   });
   if (!article) return NextResponse.json({ message: '未找到文章' }, { status: 404 });
   return NextResponse.json({ comments: article.commentIds || [] });
@@ -44,12 +44,12 @@ export async function POST(req, { params }) {
 // 删除评论
 export async function DELETE(req, { params }) {
   await dbConnect();
-  const { id: articleId } =await params;
-  
+  const { id: articleId } = await params;
+
   // 获取URL查询参数中的commentId
   const searchParams = req.nextUrl.searchParams;
   const commentId = searchParams.get('commentId');
-  
+
   // 验证用户登录状态
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -68,21 +68,19 @@ export async function DELETE(req, { params }) {
     // 检查评论是否属于当前用户（权限验证）
     if (comment.author.toString() !== session.user.id) {
       return NextResponse.json({ message: '没有权限删除此评论' }, { status: 403 });
-    } 
+    }
     // 查找文章并移除评论引用
     const article = await Article.findById(articleId);
     if (!article) {
       return NextResponse.json({ message: '未找到文章' }, { status: 404 });
-    } 
+    }
     // 从文章的评论ID数组中移除当前评论ID
-    article.commentIds = article.commentIds.filter(
-      id => id.toString() !== commentId
-    );
+    article.commentIds = article.commentIds.filter((id) => id.toString() !== commentId);
     await article.save();
-    
+
     // 删除评论
     await Comment.findByIdAndDelete(commentId);
-    
+
     return NextResponse.json({ success: true, message: '评论已删除' });
   } catch (error) {
     console.error('删除评论失败:', error);
@@ -90,17 +88,16 @@ export async function DELETE(req, { params }) {
   }
 }
 
-
 //简洁版删除，无安全验证
 
 // export async function DELETE(req, { params }) {
 //   await dbConnect();
 //   const { id: articleId } = params;
-  
+
 //   // 获取URL查询参数中的commentId
 //   const searchParams = req.nextUrl.searchParams;
 //   const commentId = searchParams.get('commentId');
-  
+
 //     // 查找文章并移除评论引用
 //     const article = await Article.findById(articleId);
 //     // 从文章的评论ID数组中移除当前评论ID
@@ -110,6 +107,6 @@ export async function DELETE(req, { params }) {
 //     await article.save();
 //     // 删除评论
 //     await Comment.findByIdAndDelete(commentId);
-    
+
 //     return NextResponse.json({ success: true, message: '评论已删除' });
 // }

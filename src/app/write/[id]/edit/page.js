@@ -1,12 +1,15 @@
 // src/app/admin/articles/write/page.js
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function NewArticlePage({ articleId, placeholder = '' }) {
+export default function NewArticlePage({ params }) {
+  const unwrappedParams = use(params);
+  const articleId = unwrappedParams.id;
+
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -18,32 +21,109 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
   const [category, setCategory] = useState('学科分享'); // 分类，默认显示，与下拉菜单保持一致
   const [isPublished, setIsPublished] = useState(false);
   // 多图片上传与封面选择
-  const [imageFiles, setImageFiles] = useState([]); // 多图片
-  const [coverIndex, setCoverIndex] = useState(0); // 封面索引，默认第一个
-  const [imageUrls, setImageUrls] = useState([]); // 新增：图片URL数组
-  const [imageList, setImageList] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]); // {name，id，size}
+  const [coverImage, setCoverImage] = useState(''); //存id
+  const [imageList, setImageList] = useState([]); //存id
 
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   // 左右卡片收起状态
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(true);
 
   // 文件上传相关 state
-  const [fileList, setFileList] = useState([]); // {name, url, size}
+  const [fileList, setFileList] = useState([]); // {name, id, size}
+  // const [fileIdList, setFileIdList] = useState([]);
   const [fileUploading, setFileUploading] = useState(false);
+
+  const [comments, setComments] = useState([]);
+
+  useEffect(() => {
+    if (!articleId) return;
+    setLoading(true);
+    fetch(`/api/articles/${articleId}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        const art = data.data || data.article || null;
+        setArticle(art);
+        setTitle(art.title);
+        setContent(art.content);
+        setDescription(art.description);
+        setPartition(art.partition);
+        setCategory(art?.category);
+        if (art?.status === 'PUBLIC' || art?.status === 'PENDING') {
+          setIsPublished(true);
+        } else setIsPublished(false);
+        setCoverImage(art?.coverImage);
+        setImageList(art?.images);
+        setComments(art?.commentIds);
+
+        fetchFiles(art?.attachments);
+        fetchImageFiles(art?.images);
+
+        console.log('[ArticleDetail] 文章数据:', art);
+      })
+      .catch((err) => {
+        // setError('文章加载失败：' + err.message);
+        toast.error('文章加载失败');
+      })
+      .finally(() => setLoading(false));
+  }, [articleId, session?.user]);
+
+  //根据图片id，批量获取图片信息
+  const fetchImageFiles = async (imageIds) => {
+    try {
+      // console.log(imageList[0]);
+      const fetchPromises = imageIds.map(async (imageId) => {
+        const response = await fetch(`/api/images/${imageId}/info`);
+        if (!response.ok) {
+          throw new Error(`查询图片 ${imageId} 失败: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.data;
+      });
+      const imageFiles = await Promise.all(fetchPromises);
+      // console.log(imageFiles);
+      setImageFiles(imageFiles);
+    } catch (error) {
+      console.error('批量查询图片失败:', error.message);
+    }
+  };
+
+  //根据文件id，批量获取文件信息
+  const fetchFiles = async (fileIds) => {
+    console.log('----');
+    console.log(fileIds);
+    try {
+      // console.log(imageList[0]);
+      const fetchPromises = fileIds.map(async (fileId) => {
+        const response = await fetch(`/api/files/${fileId}/info`);
+        if (!response.ok) {
+          throw new Error(`查询文件 ${fileId} 失败: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.data;
+      });
+      const files = await Promise.all(fetchPromises);
+      // console.log(imageFiles);
+      setFileList(files);
+    } catch (error) {
+      console.error('批量查询文件失败:', error.message);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     if (!title || !content) {
       toast.error('标题和内容不能为空。');
       setLoading(false);
       return;
     }
-
     // 直接用 imageUrls 和 coverIndex 取封面id
-    const coverImageId = (imageUrls[coverIndex] || imageUrls[0] || '').replace(/^\/api\/images\//, '');
     let statusValue = 'PRIVATE';
     if (isPublished) {
       if (session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN') {
@@ -54,6 +134,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
     } else {
       statusValue = 'PRIVATE';
     }
+
     const articleData = {
       title,
       content,
@@ -62,13 +143,13 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
       attachments: fileList.map((f) => f.id), // 只存一维id数组
       category, // 分类
       status: statusValue,
-      coverImage: coverImageId,
+      coverImage: coverImage,
       images: imageList,
     };
 
     try {
-      const res = await fetch('/api/articles', {
-        method: 'POST',
+      const res = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -76,9 +157,9 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
       });
       const result = await res.json();
       if (!res.ok) {
-        toast.error(result.message || `创建文章失败 (Status: ${res.status})`);
+        toast.error(result.message || `修改文章失败 (Status: ${res.status})`);
       } else {
-        toast.success(`文章 "${result.data.title}" 创建成功！`);
+        toast.success(`文章 "${result.data.title}" 修改成功！`);
         setTitle('');
         setContent('');
         setDescription('');
@@ -97,6 +178,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     setLoading(true);
+    console.log(files);
     const formData = new FormData();
     files.forEach((f) => formData.append('images', f));
     try {
@@ -105,12 +187,22 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
         body: formData,
       });
       const uploadResult = await uploadRes.json();
+      console.log('uploadResult.ids' + uploadResult.ids);
+      const filesWithId = files.map((file, index) => ({
+        // 手动提取File的关键属性
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+        // 新增id
+        id: uploadResult.ids[index],
+      }));
+      console.dir(filesWithId, { depth: null });
       if (uploadRes.ok && Array.isArray(uploadResult.urls)) {
-        setImageFiles((prev) => [...prev, ...files]);
-        setImageUrls((prev) => [...prev, ...uploadResult.urls]);
-        // 只有首次添加图片时才自动设封面为 0
-        setCoverIndex((prev) => (prev === 0 && prev.length === 0 ? 0 : prev));
+        setImageFiles((prev) => [...prev, ...filesWithId]);
+        console.log('imageFiles' + imageFiles);
         setImageList((prev) => [...prev, ...uploadResult.ids]);
+        console.log('imageList' + imageList);
       } else {
         toast.error('图片上传失败');
       }
@@ -123,11 +215,8 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
 
   // 删除图片
   const handleRemoveImage = async (idx) => {
-    const url = imageUrls[idx];
-    // 解析 /api/images/图片id
-    const match = url.match(/^\/api\/images\/(.+)$/);
-    if (match) {
-      const deleteId = match[1];
+    const deleteId = imageList[idx];
+    if (deleteId) {
       try {
         await fetch(`/api/images/${deleteId}`, {
           method: 'DELETE',
@@ -135,17 +224,18 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
       } catch {}
     }
     setImageFiles((prev) => prev.filter((_, i) => i !== idx));
-    setImageUrls((prev) => prev.filter((_, i) => i !== idx));
     setImageList((prev) => prev.filter((_, i) => i !== idx));
-    if (coverIndex === idx) setCoverIndex(0);
-    else if (coverIndex > idx) setCoverIndex((c) => c - 1);
+    if (coverImage === imageFiles[idx].id) setCoverImage('');
+    // else if (coverIndex > idx) setCoverIndex((c) => c - 1);
   };
 
   // 在内容区插入图片markdown引用
-  const insertImageMarkdown = (file, url) => {
-    console.log(imageList);
+  const insertImageMarkdown = (file) => {
     // url 为 /api/images/图片id
-    const md = `![${file.name}](${url})`;
+
+    console.log(comments);
+
+    const md = `![${file.name}](api/images/${file.id})`;
     // 在光标处插入
     const textarea = document.getElementById('content');
     if (textarea) {
@@ -181,7 +271,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
         const newFiles = files.map((f, i) => ({
           name: f.name,
           size: f.size,
-          url: uploadResult.urls[i],
+          // url: uploadResult.urls[i],
           id: uploadResult.ids[i],
         }));
         setFileList((prev) => [...prev, ...newFiles]);
@@ -206,6 +296,60 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
       } catch {}
     }
     setFileList((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  //删除评论
+  async function handleDeleteComment(commentId) {
+    try {
+      // 发送删除请求
+      const res = await fetch(`/api/articles/${articleId}/comments?commentId=${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('删除评论出错:', error);
+      toast.error('删除失败，请稍后重试');
+    }
+  }
+
+  //文章删除
+  const handleDeleteArticle = async () => {
+    // 1. 确认弹窗
+    const isConfirm = window.confirm('确定要删除这篇文章吗？删除后无法恢复！');
+    if (!isConfirm) return;
+
+    // 2. 加载状态
+    setDeleteLoading(true);
+    for (let i = imageList.length - 1; i >= 0; i--) {
+      await handleRemoveImage(i);
+    }
+    for (let i = fileList.length - 1; i >= 0; i--) {
+      await handleRemoveFile(i);
+    }
+    for (let i = comments.length - 1; i >= 0; i--) {
+      await handleDeleteComment(comments[i]);
+    }
+    try {
+      // 3. 调用删除接口（替换为实际接口地址）
+      const res = await fetch(`/api/articles/${articleId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        alert('删除成功！');
+        window.location.href = '/';
+      } else {
+        alert('删除失败，请重试！');
+      }
+    } catch (err) {
+      console.error('删除错误：', err);
+      alert('删除出错，请稍后再试！');
+    } finally {
+      // 5. 关闭加载状态
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -283,7 +427,6 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                   />
                 </div>
 
-                {/* 类型/分区 */}
                 <div>
                   <label htmlFor="partition" className="block text-base font-semibold mb-1 text-indigo-900">
                     分区
@@ -294,7 +437,6 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                     onChange={(e) => setPartition(e.target.value)}
                     className="mt-1 block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-indigo-50/60 transition"
                     style={{ color: '#222' }}>
-                    {/* 管理员/超级管理员可选所有分区，普通用户无新闻/通知 */}
                     {session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' ? (
                       <>
                         <option value="NOTICE" onChange={() => setCategory('日常推文')}>
@@ -314,6 +456,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                     )}
                   </select>
                 </div>
+
                 <div>
                   <label htmlFor="category" className="block text-base font-semibold mb-1 text-indigo-900">
                     分类
@@ -324,7 +467,6 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                     onChange={(e) => setCategory(e.target.value)}
                     className="mt-1 block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-base bg-indigo-50/60 transition"
                     style={{ color: '#222' }}>
-                    {/* 新闻中放日常推文,没有分类，资料中放朋辈讲义，知识见解，科研分享，广场中放平时大家的一些分享*/}
                     {partition === 'DOWNLOAD' ? (
                       <>
                         <option value="朋辈讲义">朋辈讲义</option>
@@ -332,7 +474,6 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                         <option value="科研分享">科研分享</option>
                       </>
                     ) : (
-                      //这里套了一个三元表达式
                       <>
                         {partition === 'NOTICE' ? (
                           <>
@@ -378,13 +519,20 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                     公开
                   </label>
                 </div>
-
-                <div>
+                <div className="flex gap-4">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-2xl shadow text-base font-bold text-white bg-gradient-to-r from-indigo-500 to-blue-400 hover:from-indigo-600 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 disabled:opacity-70 transition-all duration-200">
+                    className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-2xl shadow text-base font-bold text-white bg-gradient-to-r from-indigo-500 to-blue-400 hover:from-indigo-600 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 disabled:opacity-70 transition-all duration-200">
                     {loading ? '正在提交...' : '发布文章'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteArticle}
+                    // disabled={deleteLoading || loading}
+                    className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-2xl shadow text-base font-bold text-white bg-gradient-to-r from-red-500 to-rose-400 hover:from-red-600 hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400 disabled:opacity-70 transition-all duration-200">
+                    {/* {deleteLoading ? '正在删除...' : '删除文章'} */}
+                    {'删除文章'}
                   </button>
                 </div>
               </form>
@@ -401,45 +549,6 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
             transition: 'all 0.4s cubic-bezier(.4,2,.6,1)',
           }}>
           <h2 className="text-2xl font-bold mb-6 text-indigo-700 text-center drop-shadow">文章内容</h2>
-          {/* {isMainattachments && mainattachmentsFile ? (
-            <div className="flex-1 min-h-0 w-full h-full bg-white/80 rounded-xl border border-gray-100 p-6 overflow-auto text-gray-700 text-base flex flex-col" style={{minHeight:0, height:'100%', maxHeight:'100%'}}>
-              {/!* 附件预览 *!/}
-              {(() => {
-                const name = mainattachmentsFile.name.toLowerCase();
-                if (name.endsWith('.md')) {
-                  return (
-                    <pre className="whitespace-pre-wrap break-words text-sm flex-1 w-full h-full overflow-auto" style={{fontFamily:'inherit', minHeight:0, height:'100%', maxHeight:'100%'}}>{mainattachmentsFile._previewContent || '正在加载...'}</pre>
-                  );
-                } else if (name.match(/\.(pdf)$/)) {
-                  return mainattachmentsPreviewUrl ? (
-                    <object data={mainattachmentsPreviewUrl} type="application/pdf" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}>
-                      <iframe src={mainattachmentsPreviewUrl} title="pdf预览" width="100%" height="100%" style={{minHeight:0, height:'100%', maxHeight:'100%', display:'block'}}></iframe>
-                      <div className="text-gray-400 text-center">PDF 预览不可用，请下载后本地查看。</div>
-                    </object>
-                  ) : (
-                    <div className="text-gray-400 text-center">正在加载 PDF...</div>
-                  );
-                } else if (name.match(/\.(jpe?g|png|gif|webp|svg)$/)) {
-                  // 图片预览
-                  return (
-                    <img src={URL.createObjectURL(mainattachmentsFile)} alt={mainattachmentsFile.name} style={{width:'100%', height:'100%', objectFit:'contain', borderRadius:'1rem', background:'#f8fafc'}} />
-                  );
-                } else if (name.endsWith('.zip')) {
-                  return (
-                    <div className="text-gray-400 text-center">暂不支持预览 zip 文件</div>
-                  );
-                } else if (name.match(/\.(docx?|xlsx?)$/)) {
-                  return (
-                    <div className="text-gray-400 text-center">暂不支持直接预览该类型文件</div>
-                  );
-                } else {
-                  return (
-                    <div className="text-gray-400 text-center">暂不支持预览</div>
-                  );
-                }
-              })()}
-            </div>
-          ) : ( */}
           <textarea
             id="content"
             rows={22}
@@ -508,7 +617,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
               {/* 图片区 */}
               <div className="flex flex-col gap-2 mb-6 w-full relative flex-1">
                 {/* 添加图片加号按钮 */}
-                {imageFiles.length > 0 && (
+                {imageList.length > 0 && (
                   <button
                     type="button"
                     title="添加图片"
@@ -520,7 +629,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                     </svg>
                   </button>
                 )}
-                {imageFiles.length === 0 ? (
+                {imageList.length === 0 ? (
                   <div
                     className="flex flex-col items-center justify-center h-40 text-gray-400 w-full select-none cursor-pointer group"
                     onClick={() => document.getElementById('image-upload-input')?.click()}>
@@ -542,20 +651,20 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                           <div
                             key={idx}
                             className={`relative flex flex-col items-center border-2 rounded-xl p-2 transition cursor-pointer group ml-1.5 mt-1.5 ${
-                              coverIndex === idx ? 'border-indigo-500 bg-indigo-50/80 shadow-lg scale-105' : 'border-gray-200 bg-white/80 hover:scale-105 hover:shadow-md'
+                              coverImage === file.id ? 'border-indigo-500 bg-indigo-50/80 shadow-lg scale-105' : 'border-gray-200 bg-white/80 hover:scale-105 hover:shadow-md'
                             }`}
                             style={{
                               width: 100,
-                              boxShadow: coverIndex === idx ? '0 0 0 3px #6366f1aa' : '',
+                              boxShadow: coverImage === file.id ? '0 0 0 3px #6366f1aa' : '',
                             }}
-                            onClick={() => insertImageMarkdown(file, imageUrls[idx] || '')}>
+                            onClick={() => insertImageMarkdown(file || '')}>
                             <div className="relative w-16 h-16 mb-1">
                               <img
-                                src={URL.createObjectURL(file)}
+                                src={`/api/images/${file.id}`}
                                 alt={file.name}
                                 className="w-16 h-16 object-cover rounded border shadow group-hover:scale-110 group-hover:shadow-lg transition-all duration-200"
                                 style={{
-                                  boxShadow: coverIndex === idx ? '0 0 0 2px #6366f1' : '',
+                                  boxShadow: coverImage === file.id ? '0 0 0 2px #6366f1' : '',
                                 }}
                               />
                               <button
@@ -573,8 +682,8 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                               {file.name}
                             </span>
                             <label className="flex items-center gap-1 cursor-pointer select-none mt-1" onClick={(e) => e.stopPropagation()}>
-                              <input type="radio" name="cover" checked={coverIndex === idx} onChange={() => setCoverIndex(idx)} className="accent-indigo-500 w-4 h-4" />
-                              <span className={`text-xs ${coverIndex === idx ? 'text-indigo-600 font-bold' : 'text-gray-400'}`}>封面</span>
+                              <input type="radio" name="cover" checked={coverImage === file.id} onChange={() => setCoverImage(file.id)} className="accent-indigo-500 w-4 h-4" />
+                              <span className={`text-xs ${coverImage === file.id ? 'text-indigo-600 font-bold' : 'text-gray-400'}`}>封面</span>
                             </label>
                           </div>
                         ))}
@@ -583,6 +692,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                   </>
                 )}
               </div>
+
               {/* 渐变横线分隔 */}
               <div className="w-full h-px my-4 bg-gradient-to-r from-transparent via-indigo-200 to-transparent" style={{ opacity: 0.8 }}></div>
               {/* 文件区 */}
@@ -611,7 +721,7 @@ export default function NewArticlePage({ articleId, placeholder = '' }) {
                           </span>
                           <span className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</span>
                         </div>
-                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline text-xs px-2">
+                        <a href={`/api/files/${file.id}`} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline text-xs px-2">
                           下载
                         </a>
                         <button type="button" onClick={() => handleRemoveFile(idx)} className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold">

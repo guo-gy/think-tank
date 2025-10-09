@@ -7,14 +7,17 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // MongoDB 图片模型
 async function getImageModel() {
   await dbConnect();
-  const ImageSchema = new mongoose.Schema({
-    filename: String,
-    contentType: String,
-    size: Number,
-    data: Buffer,
-    userId: String,
-    createdAt: { type: Date, default: Date.now },
-  }, { collection: 'images' });
+  const ImageSchema = new mongoose.Schema(
+    {
+      filename: String,
+      contentType: String,
+      size: Number,
+      data: Buffer,
+      userId: String,
+      createdAt: { type: Date, default: Date.now },
+    },
+    { collection: 'images' }
+  );
   return mongoose.models.Image || mongoose.model('Image', ImageSchema);
 }
 
@@ -33,6 +36,7 @@ export async function POST(req) {
   }
   const Image = await getImageModel();
   const urls = [];
+  const ids = [];
   for (const file of files) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -45,6 +49,7 @@ export async function POST(req) {
     });
     // 返回 /api/images/图片id
     urls.push(`/api/images/${doc._id}`);
+    ids.push(doc._id.toString());
   }
-  return NextResponse.json({ urls });
+  return NextResponse.json({ urls, ids });
 }

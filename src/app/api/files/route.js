@@ -7,14 +7,17 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // MongoDB 文件模型
 async function getFileModel() {
   await dbConnect();
-  const FileSchema = new mongoose.Schema({
-    filename: String,
-    contentType: String,
-    size: Number,
-    data: Buffer,
-    userId: String,
-    createdAt: { type: Date, default: Date.now },
-  }, { collection: 'files' });
+  const FileSchema = new mongoose.Schema(
+    {
+      filename: String,
+      contentType: String,
+      size: Number,
+      data: Buffer,
+      userId: String,
+      createdAt: { type: Date, default: Date.now },
+    },
+    { collection: 'files' }
+  );
   return mongoose.models.File || mongoose.model('File', FileSchema);
 }
 
@@ -46,7 +49,7 @@ export async function POST(req) {
       data: buffer,
       userId,
     });
-    urls.push(`/files/${doc._id}`);
+    urls.push(`api/files/${doc._id}`);
     ids.push(doc._id.toString());
   }
   return NextResponse.json({ urls, ids });

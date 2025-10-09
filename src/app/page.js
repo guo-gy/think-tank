@@ -13,8 +13,7 @@ import Hero3D from "@/components/Hero3D";
 function GlassCard({ children, className = "" }) {
   return (
     <div
-      className={`rounded-2xl bg-white border border-gray-100 shadow-md p-4 transition-all  hover:scale-105 hover:shadow-lg ${className}`}
-    >
+      className={`rounded-2xl bg-white border border-gray-100 shadow-md p-4 transition-all  hover:scale-105 hover:shadow-lg ${className}`}>
       {children}
     </div>
   );
@@ -89,15 +88,13 @@ export default function HomePage() {
           className="absolute left-2 top-1/2 z-30 -translate-y-1/2 bg-white/10 hover:bg-white shadow rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
           style={{ backdropFilter: "blur(4px)" }}
           onClick={() => scrollBy(-window.innerWidth * 0.33)}
-          tabIndex={-1}
-        >
+          tabIndex={-1}>
           <svg
             width="24"
             height="24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
-          >
+            strokeWidth="2">
             <path d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -105,15 +102,13 @@ export default function HomePage() {
           className="absolute right-2 top-1/2 z-30 -translate-y-1/2 bg-white/10 hover:bg-white shadow rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
           style={{ backdropFilter: "blur(4px)" }}
           onClick={() => scrollBy(window.innerWidth * 0.33)}
-          tabIndex={-1}
-        >
+          tabIndex={-1}>
           <svg
             width="24"
             height="24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
-          >
+            strokeWidth="2">
             <path d="M9 5l7 7-7 7" />
           </svg>
         </button>
@@ -124,13 +119,11 @@ export default function HomePage() {
             userSelect: "none",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-          }}
-        >
+          }}>
           {/* 3D球体专属卡片（无背景、无阴影、无边框） */}
           <div
             className="flex flex-col justify-center items-center h-full flex-shrink-0 p-12"
-            style={{ width: "29vw", minWidth: 260, maxWidth: 520 }}
-          >
+            style={{ width: "29vw", minWidth: 260, maxWidth: 520 }}>
             <div className="w-full h-full flex flex-col justify-center items-center px-6">
               <div
                 className="w-full flex justify-center items-center mt-4 mb-4"
@@ -139,8 +132,7 @@ export default function HomePage() {
                   minHeight: 90,
                   maxHeight: 150,
                   position: "relative",
-                }}
-              >
+                }}>
                 <Hero3D />
               </div>
             </div>
@@ -153,8 +145,7 @@ export default function HomePage() {
               minWidth: 400,
               maxWidth: 1200,
               overflow: "visible",
-            }}
-          >
+            }}>
             <div className="flex items-center mb-8">
               <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
               <span className="inline-block w-6 h-6 mr-1 text-red-500">
@@ -165,8 +156,7 @@ export default function HomePage() {
                   strokeWidth="2"
                   className="w-6 h-6"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                  strokeLinejoin="round">
                   <rect
                     x="3"
                     y="7"
@@ -181,8 +171,7 @@ export default function HomePage() {
               <Link
                 href="/notices"
                 className="text-3xl font-bold text-red-600 text-center flex-1 transition-colors duration-200 hover:text-red-400 cursor-pointer select-none"
-                style={{ textDecoration: "none" }}
-              >
+                style={{ textDecoration: "none" }}>
                 通知公告
               </Link>
             </div>
@@ -190,8 +179,7 @@ export default function HomePage() {
             <div className="flex flex-col items-center mt-8">
               <div
                 className="w-full"
-                style={{ aspectRatio: "16/9", minHeight: 200 }}
-              >
+                style={{ aspectRatio: "16/9", minHeight: 200 }}>
                 <Swiper
                   spaceBetween={20}
                   slidesPerView={1}
@@ -207,15 +195,13 @@ export default function HomePage() {
                     bulletClass: "swiper-pagination-bullet", // 单个小点的类名（用于自定义样式）
                     bulletActiveClass: "swiper-pagination-bullet-active", // 激活状态小点的类名
                   }}
-                  className="h-full rounded-2xl relative"
-                >
+                  className="h-full rounded-2xl relative">
                   {noticeList.map((item, idx) => (
                     <SwiperSlide key={item._id || idx}>
                       <Link href={`/${item._id || ""}`}>
                         <div
                           className="relative w-full h-full"
-                          style={{ minHeight: 200 }}
-                        >
+                          style={{ minHeight: 200 }}>
                           <Image
                             src={
                               item.coverImage
@@ -335,8 +321,7 @@ export default function HomePage() {
               minWidth: 340,
               maxWidth: 700,
               overflow: "visible",
-            }}
-          >
+            }}>
             <div className="flex items-center mb-8">
               <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
               <span className="inline-block w-6 h-6 mr-1 text-green-500">
@@ -347,8 +332,7 @@ export default function HomePage() {
                   strokeWidth="2"
                   className="w-6 h-6"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                  strokeLinejoin="round">
                   <rect
                     x="3"
                     y="4"
@@ -364,8 +348,7 @@ export default function HomePage() {
               <Link
                 href="/downloads"
                 className="text-2xl font-bold text-green-600 text-center flex-1 transition-colors duration-200 hover:text-green-400 cursor-pointer select-none"
-                style={{ textDecoration: "none" }}
-              >
+                style={{ textDecoration: "none" }}>
                 资料下载
               </Link>
             </div>
@@ -373,48 +356,45 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 mt-8">
               {downloadList.map((item) => (
                 <Link href={`/${item._id || ""}`} key={item._id}>
-                <div
-                  className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
-                >
-                  <div className="flex-1 flex flex-col justify-center px-5 py-2">
-                    <span className="text-base font-semibold text-gray-800">
-                      {item.title}
-                    </span>
-                    <span className="text-sm text-gray-500 mt-1">
+                  <div className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+                    <div className="flex-1 flex flex-col justify-center px-5 py-2">
+                      <span className="text-base font-semibold text-gray-800">
+                        {item.title}
+                      </span>
+                      <span className="text-sm text-gray-500 mt-1">
                         {item.description
                           ? item.description.length > 16
                             ? `${item.description.substring(0, 16)}...`
                             : item.description
                           : "暂无摘要"}
                       </span>
-                  </div>
-                  {item.coverImage && (
-                    <div className="relative w-1/2 h-full min-w-[4rem]">
-                      <Image
-                        src={`/api/images/${item.coverImage}`}
-                        alt="资料配图"
-                        fill
-                        className="object-cover w-full h-full object-center"
-                        style={{ borderRadius: 0 }}
-                      />
-                      <div
-                        className="absolute top-0 left-0 h-full w-full pointer-events-none"
-                        style={{
-                          background:
-                            "linear-gradient(to left, rgba(255,255,255,0) 0%, #fff 90%)",
-                        }}
-                      />
                     </div>
-                  )}
-                </div>
+                    {item.coverImage && (
+                      <div className="relative w-1/2 h-full min-w-[4rem]">
+                        <Image
+                          src={`/api/images/${item.coverImage}`}
+                          alt="资料配图"
+                          fill
+                          className="object-cover w-full h-full object-center"
+                          style={{ borderRadius: 0 }}
+                        />
+                        <div
+                          className="absolute top-0 left-0 h-full w-full pointer-events-none"
+                          style={{
+                            background:
+                              "linear-gradient(to left, rgba(255,255,255,0) 0%, #fff 90%)",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
             <div className="text-right mt-6">
               <Link
                 href="/downloads"
-                className="text-sm text-gray-400 hover:text-green-500 transition-colors"
-              >
+                className="text-sm text-gray-400 hover:text-green-500 transition-colors">
                 查看更多资料 &rarr;
               </Link>
             </div>
@@ -427,8 +407,7 @@ export default function HomePage() {
               minWidth: 340,
               maxWidth: 700,
               overflow: "visible",
-            }}
-          >
+            }}>
             <div className="flex items-center mb-8">
               <span className="inline-block w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
               <span className="inline-block w-6 h-6 mr-1 text-yellow-400">
@@ -439,8 +418,7 @@ export default function HomePage() {
                   strokeWidth="2"
                   className="w-6 h-6"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                  strokeLinejoin="round">
                   <circle cx="12" cy="8" r="4" stroke="currentColor" />
                   <path
                     d="M4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1"
@@ -451,8 +429,7 @@ export default function HomePage() {
               <Link
                 href="/square"
                 className="text-2xl font-bold text-yellow-500 text-center flex-1 transition-colors duration-200 hover:text-yellow-400 cursor-pointer select-none"
-                style={{ textDecoration: "none" }}
-              >
+                style={{ textDecoration: "none" }}>
                 广场
               </Link>
             </div>
@@ -460,48 +437,45 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 mt-8">
               {squareList.map((item) => (
                 <Link href={`/${item._id || ""}`} key={item._id}>
-                <div
-                  className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl"
-                >
-                  <div className="flex-1 flex flex-col justify-center px-5 py-2">
-                    <span className="text-base font-semibold text-gray-800">
-                      {item.title}
-                    </span>
-                    <span className="text-sm text-gray-500 mt-1">
+                  <div className="flex flex-row h-20 rounded-xl border border-gray-100 bg-white overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+                    <div className="flex-1 flex flex-col justify-center px-5 py-2">
+                      <span className="text-base font-semibold text-gray-800">
+                        {item.title}
+                      </span>
+                      <span className="text-sm text-gray-500 mt-1">
                         {item.description
                           ? item.description.length > 16
                             ? `${item.description.substring(0, 16)}...`
                             : item.description
                           : "暂无摘要"}
                       </span>
-                  </div>
-                  {item.coverImage && (
-                    <div className="relative w-1/2 h-full min-w-[4rem]">
-                      <Image
-                        src={`/api/images/${item.coverImage}`}
-                        alt="广场配图"
-                        fill
-                        className="object-cover w-full h-full object-center"
-                        style={{ borderRadius: 0 }}
-                      />
-                      <div
-                        className="absolute top-0 left-0 h-full w-full pointer-events-none"
-                        style={{
-                          background:
-                            "linear-gradient(to left, rgba(255,255,255,0) 0%, #fff 90%)",
-                        }}
-                      />
                     </div>
-                  )}
-                </div>
+                    {item.coverImage && (
+                      <div className="relative w-1/2 h-full min-w-[4rem]">
+                        <Image
+                          src={`/api/images/${item.coverImage}`}
+                          alt="广场配图"
+                          fill
+                          className="object-cover w-full h-full object-center"
+                          style={{ borderRadius: 0 }}
+                        />
+                        <div
+                          className="absolute top-0 left-0 h-full w-full pointer-events-none"
+                          style={{
+                            background:
+                              "linear-gradient(to left, rgba(255,255,255,0) 0%, #fff 90%)",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
             <div className="text-right mt-6">
               <Link
                 href="/square"
-                className="text-sm text-gray-400 hover:text-yellow-500 transition-colors"
-              >
+                className="text-sm text-gray-400 hover:text-yellow-500 transition-colors">
                 查看更多内容 &rarr;
               </Link>
             </div>
@@ -509,8 +483,7 @@ export default function HomePage() {
           {/* 介绍专属卡片（无背景、无阴影、无边框，排在最右） */}
           <div
             className="flex flex-col justify-center items-center h-full flex-shrink-0 p-12"
-            style={{ width: "29vw", minWidth: 260, maxWidth: 520 }}
-          >
+            style={{ width: "29vw", minWidth: 260, maxWidth: 520 }}>
             <div className="w-full h-full flex flex-col justify-center items-center px-6">
               <h1 className="text-4xl font-extrabold text-indigo-700 mb-4 text-center">
                 山东大学软件学院智库

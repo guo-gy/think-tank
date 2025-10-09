@@ -1,7 +1,7 @@
 // src/app/api/articles/route.js
 import { NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
 import Article from '@/models/Article';
 
@@ -31,7 +31,8 @@ export async function POST(request) {
       content,
       description,
       coverImage,
-      attachments = [], 
+      attachments = [],
+      images = [],
       status = 'PRIVATE',
       partition, // 分区，
       category, // 分类，
@@ -55,6 +56,7 @@ export async function POST(request) {
       description,
       coverImage,
       attachments,
+      images,
       status,
       author: session.user.id,
       partition,
@@ -65,7 +67,6 @@ export async function POST(request) {
     const savedArticle = await newArticle.save();
 
     return NextResponse.json({ success: true, message: '文章创建成功', data: savedArticle }, { status: 201 });
-
   } catch (error) {
     console.error('Error creating article:', error);
     if (error.name === 'ValidationError') {
@@ -98,9 +99,7 @@ export async function GET(request) {
     if (partition) filter.partition = partition;
     if (category) filter.category = category;
     if (author) filter.author = author; // 关联作者ID筛选
-    const articles = await Article.find(filter)
-      .sort({ createdAt: -1 })
-      .populate('author', 'username');
+    const articles = await Article.find(filter).sort({ createdAt: -1 }).populate('author', 'username');
     // 调试输出每篇文章的 attachments 字段
     return NextResponse.json({ success: true, data: articles }, { status: 200 });
   } catch (error) {
