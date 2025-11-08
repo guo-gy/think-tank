@@ -15,13 +15,12 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 判断是否管理员
+  // 判断是否管理员--
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    log.console(1);
     // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
     const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
     fetch(`/api/articles?partition=NEWS&status=${statusParam}`)
