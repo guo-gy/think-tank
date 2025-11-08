@@ -21,6 +21,7 @@ export default function NewsPage() {
   useEffect(() => {
     setLoading(true);
     setError("");
+    log.console(1);
     // 管理员拉取 PUBLIC,PENDING，普通用户只拉取 PUBLIC
     const statusParam = isAdmin ? "PUBLIC,PENDING" : "PUBLIC";
     fetch(`/api/articles?partition=NEWS&status=${statusParam}`)
