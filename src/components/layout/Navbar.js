@@ -290,7 +290,7 @@ export default function Navbar() {
                   onClick={() => signIn()}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-1.5 px-4 rounded-md transition-colors"
                 >
-                  管理员登录
+                  登录
                 </button>
                  <Link
                   href="/register"
