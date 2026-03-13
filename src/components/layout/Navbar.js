@@ -290,14 +290,14 @@ export default function Navbar() {
                   onClick={() => signIn()}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-1.5 px-4 rounded-md transition-colors"
                 >
-                  登录
+                  管理员登录
                 </button>
-                 <Link
+                 {/* <Link
                   href="/register"
                   className="ml-1 text-indigo-600 hover:text-indigo-800 text-sm font-semibold px-2 py-1 rounded transition-colors"
                 >
                   注册
-                </Link> 
+                </Link>  */}
               </>
             )}
             
