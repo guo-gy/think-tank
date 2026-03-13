@@ -292,14 +292,15 @@ export default function Navbar() {
                 >
                   管理员登录
                 </button>
-                {/* <Link
+                
+              </>
+            )}
+            {/* <Link
                   href="/register"
                   className="ml-1 text-indigo-600 hover:text-indigo-800 text-sm font-semibold px-2 py-1 rounded transition-colors"
                 >
                   注册
                 </Link> */}
-              </>
-            )}
           </div>
         </div>
       </nav>
